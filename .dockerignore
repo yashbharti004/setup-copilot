@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+apm-ui/node_modules
+apm-ui/.next
+apm-backend/.venv
+apm-backend/__pycache__
+apm-backend/data
+*.log
+.env
+.env.local
+bin/
+screenshots/
