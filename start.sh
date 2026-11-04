@@ -9,15 +9,14 @@ BACKEND_PID=$!
 # Wait for backend health check
 echo "[STARTUP] Waiting for backend to become healthy..."
 for i in {1..30}; do
-  if curl -s http://127.0.0.1:8001/api/health > /dev/null; then
+  if curl -s http://127.0.0.1:8001/api/health > /dev/null 2>&1; then
     echo "[STARTUP] APM Backend is healthy on port 8001!"
     break
   fi
   sleep 1
 done
 
-echo "[STARTUP] Starting Next.js frontend on port ${PORT:-3000}..."
+echo "[STARTUP] Starting Next.js frontend on port ${PORT:-10000}..."
 cd /app/frontend
 export BACKEND_URL="http://127.0.0.1:8001"
-exec npm run start -- -H 0.0.0.0 -p "${PORT:-3000}"
-
+exec npx next start -H 0.0.0.0 -p "${PORT:-10000}"

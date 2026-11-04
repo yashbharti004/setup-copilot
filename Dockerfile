@@ -5,13 +5,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
     NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production \
-    PORT=3000
+    PORT=10000
 
-# Install Python 3 and build tools
+# Install Python 3, pip, venv, and native build tools for compiling Python wheels
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
+    python3-dev \
+    build-essential \
     curl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
@@ -21,6 +23,7 @@ WORKDIR /app
 # 1. Prepare Backend
 COPY apm-backend/requirements.txt ./backend/
 RUN python3 -m venv /app/backend/.venv && \
+    /app/backend/.venv/bin/pip install --no-cache-dir --upgrade pip && \
     /app/backend/.venv/bin/pip install --no-cache-dir -r ./backend/requirements.txt
 COPY apm-backend/ ./backend/
 
@@ -38,7 +41,6 @@ WORKDIR /app
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
-EXPOSE 3000
+EXPOSE 10000
 
-CMD ["/app/start.sh"]
-
+CMD ["bash", "/app/start.sh"]

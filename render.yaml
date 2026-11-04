@@ -5,8 +5,11 @@ services:
     plan: free
     region: oregon
     dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     envVars:
+      - key: PORT
+        value: "10000"
       - key: NODE_ENV
         value: production
       - key: GEMINI_API_KEY
