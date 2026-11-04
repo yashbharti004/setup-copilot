@@ -9,6 +9,10 @@ import { DifficultyBadge } from "@/components/DifficultyBadge";
 import { ConfidenceChip } from "@/components/ConfidenceChip";
 import { ComposioManagedBanner } from "@/components/ComposioManagedBanner";
 import { AgentLiveTimeline } from "@/components/AgentLiveTimeline";
+import { StartHerePanel } from "@/components/StartHerePanel";
+import { AgentPrepKit } from "@/components/AgentPrepKit";
+import { TimelineView } from "@/components/TimelineView";
+import { ProviderVerificationLog } from "@/components/ProviderVerificationLog";
 import { PipelineProgressEvent } from "@/lib/agent/types";
 import { parseSSEBuffer } from "@/lib/utils";
 import {
@@ -69,8 +73,34 @@ export default function GuideDetailPage() {
 
   // Active tab
   const [activeTab, setActiveTab] = useState<
-    "summary" | "steps" | "blockers" | "facts" | "sources" | "rubric"
+    "summary" | "timeline" | "prep-kit" | "steps" | "verification-log" | "blockers" | "facts" | "sources" | "rubric"
   >("summary");
+
+  // Interactive step completion checkboxes (persisted in localStorage)
+  const [completedStepOrders, setCompletedStepOrders] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && slug) {
+      try {
+        const saved = localStorage.getItem(`completed_steps_${slug}`);
+        if (saved) {
+          setCompletedStepOrders(JSON.parse(saved));
+        }
+      } catch {}
+    }
+  }, [slug]);
+
+  const handleToggleStep = (order: number) => {
+    setCompletedStepOrders((prev) => {
+      const next = prev.includes(order) ? prev.filter((o) => o !== order) : [...prev, order];
+      if (typeof window !== "undefined" && slug) {
+        try {
+          localStorage.setItem(`completed_steps_${slug}`, JSON.stringify(next));
+        } catch {}
+      }
+      return next;
+    });
+  };
 
   // Copy / Download state
   const [copiedMarkdown, setCopiedMarkdown] = useState(false);
@@ -297,16 +327,14 @@ ${(guide.facts || [])
           </div>
         )}
 
-        {/* Composio Managed Alternative Advisory */}
-        {guide.app.in_composio_managed && (
-          <ComposioManagedBanner
-            appName={guide.app.name}
-            inManaged={guide.app.in_composio_managed}
-            alternativeNote={guide.app.managed_alternative_note}
-            toolUrl={guide.app.composio_tool_url}
-            whenToByoc={guide.app.when_to_byoc}
-          />
-        )}
+        {/* Composio Managed Alternative Advisory (Skip Setup with Managed OAuth vs Custom BYOC) */}
+        <ComposioManagedBanner
+          appName={guide.app.name}
+          inManaged={Boolean(guide.app.in_composio_managed)}
+          alternativeNote={guide.app.managed_alternative_note}
+          toolUrl={guide.app.composio_tool_url}
+          whenToByoc={guide.app.when_to_byoc}
+        />
 
         {/* 2. DOSSIER HEADER CARD */}
         <Card className="p-6 sm:p-8 space-y-6">
@@ -427,16 +455,26 @@ ${(guide.facts || [])
           </div>
         </Card>
 
-        {/* 3. SEGMENTED SECTION TABS */}
+        {/* 3. START HERE PANEL (NEXT ACTION SPOTLIGHT, DIRECT DEEP LINK, PROGRESS CHECKLIST) */}
+        <StartHerePanel
+          guide={guide}
+          completedStepOrders={completedStepOrders}
+          onToggleStep={handleToggleStep}
+        />
+
+        {/* 4. SEGMENTED SECTION TABS */}
         <div className="space-y-6">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
             <TabsList>
-              <TabsTrigger value="summary">Summary &amp; Verdict</TabsTrigger>
+              <TabsTrigger value="summary">Summary</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline &amp; Waits</TabsTrigger>
+              <TabsTrigger value="prep-kit">Agent Prep Kit</TabsTrigger>
               <TabsTrigger value="steps">Setup Steps ({guide.path.length})</TabsTrigger>
-              <TabsTrigger value="blockers">Blockers &amp; Fixes ({guide.blockers_and_fixes.length})</TabsTrigger>
+              <TabsTrigger value="verification-log">Verification Log</TabsTrigger>
+              <TabsTrigger value="blockers">Blockers ({guide.blockers_and_fixes.length})</TabsTrigger>
               <TabsTrigger value="facts">10 Facts Audit ({verifiedCount}/10)</TabsTrigger>
-              <TabsTrigger value="sources">Sources &amp; Quotes ({guide.sources?.length || guide.evidence.length})</TabsTrigger>
-              <TabsTrigger value="rubric">Deterministic Rubric ({guide.difficulty_score}/100)</TabsTrigger>
+              <TabsTrigger value="sources">Sources ({guide.sources?.length || guide.evidence.length})</TabsTrigger>
+              <TabsTrigger value="rubric">Rubric ({guide.difficulty_score}/100)</TabsTrigger>
             </TabsList>
 
             {/* TAB 1: SUMMARY */}
@@ -484,6 +522,16 @@ ${(guide.facts || [])
                   </div>
                 </div>
               </Card>
+            </TabsContent>
+
+            {/* TAB: TIMELINE & WAITS */}
+            <TabsContent value="timeline">
+              <TimelineView guide={guide} />
+            </TabsContent>
+
+            {/* TAB: AGENT PREP KIT (FOR HUMAN-ONLY STEPS) */}
+            <TabsContent value="prep-kit">
+              <AgentPrepKit guide={guide} />
             </TabsContent>
 
             {/* TAB 2: STEPS (WITH HUMAN/AGENT ICONS & EXPANDABLE SOURCE QUOTE) */}
@@ -585,6 +633,11 @@ ${(guide.facts || [])
                   })}
                 </div>
               </Card>
+            </TabsContent>
+
+            {/* TAB: GROUND-TRUTH VERIFICATION LOG */}
+            <TabsContent value="verification-log">
+              <ProviderVerificationLog guide={guide} />
             </TabsContent>
 
             {/* TAB 3: BLOCKERS */}
