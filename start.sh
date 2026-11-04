@@ -20,3 +20,4 @@ echo "[STARTUP] Starting Next.js frontend on port ${PORT:-3000}..."
 cd /app/frontend
 export BACKEND_URL="http://127.0.0.1:8001"
 exec npm run start -- -H 0.0.0.0 -p "${PORT:-3000}"
+

@@ -100,3 +100,4 @@ docker compose up --build
 ```
 - Frontend available at: `http://localhost:3000`
 - Backend API available at: `http://localhost:8001`
+
