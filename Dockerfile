@@ -4,7 +4,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=production \
     PORT=10000
 
 # Install Python 3, pip, venv, and native build tools for compiling Python wheels
@@ -27,17 +26,20 @@ RUN python3 -m venv /app/backend/.venv && \
     /app/backend/.venv/bin/pip install --no-cache-dir -r ./backend/requirements.txt
 COPY apm-backend/ ./backend/
 
-# 2. Prepare Frontend
+# 2. Prepare Frontend (install devDependencies like TypeScript and Tailwind needed to build)
 COPY apm-ui/package.json apm-ui/package-lock.json ./frontend/
 WORKDIR /app/frontend
-RUN npm ci
+RUN npm ci --include=dev
 
 COPY apm-ui/ ./
 RUN npm run build
 
+# 3. Set production environment for runtime
+ENV NODE_ENV=production
+
 WORKDIR /app
 
-# 3. Create startup runner script
+# 4. Create startup runner script
 COPY start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 
