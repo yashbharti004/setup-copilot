@@ -1,0 +1,33 @@
+{
+    "note": "Expected values were written from memory, not checked against live docs. Verify each one against the provider's official pages before you rely on the pass rate.",
+    "apps": [
+        {
+            "query": "GitHub",
+            "expect": {
+                "has_public_oauth_registration": true,
+                "requires_paid_plan": false
+            }
+        },
+        {
+            "query": "Linear",
+            "expect": {
+                "has_public_oauth_registration": true,
+                "requires_paid_plan": false
+            }
+        },
+        {
+            "query": "Notion",
+            "expect": {
+                "has_public_oauth_registration": true
+            }
+        },
+        {
+            "query": "Google Workspace",
+            "expect": {
+                "has_public_oauth_registration": true,
+                "uses_restricted_scopes": true,
+                "requires_security_audit": true
+            }
+        }
+    ]
+}

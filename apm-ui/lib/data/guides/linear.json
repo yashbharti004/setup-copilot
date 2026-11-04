@@ -1,0 +1,171 @@
+{
+  "app": {
+    "name": "Linear",
+    "slug": "linear",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Linear_logo.svg",
+    "docs_url": "https://developers.linear.app/docs/oauth/authentication",
+    "category": "Developer Tools & Project Management",
+    "in_composio_managed": true,
+    "composio_app_id": "linear",
+    "composio_tool_url": "https://composio.dev/tools/linear",
+    "managed_alternative_note": "Composio provides managed Linear connectors for creating issues, sync cycles, and updating project milestones with zero OAuth configuration.",
+    "when_to_byoc": [
+      "Custom branding: Display your application name and icon on the Linear OAuth consent screen",
+      "Dedicated webhook infrastructure: Direct delivery of issue and cycle webhooks to private endpoints",
+      "Enterprise audit logs: Direct integration with organizational Linear security audit trails"
+    ]
+  },
+  "summary": "Fast, clean developer experience. Instant self-serve OAuth application registration with standard PKCE and webhook support.",
+  "difficulty": "Easy",
+  "difficulty_score": 15,
+  "difficulty_factors": [
+    "+15 pts: Multi-workspace OAuth requires registered OAuth client and PKCE",
+    "+0 pts: No review required for direct OAuth install URLs",
+    "+0 pts: Free workspaces can create and authorize OAuth applications"
+  ],
+  "time_estimate": {
+    "setup_active_effort": "10–15 min",
+    "dev_wait_claim": "Instant (0 seconds; credentials immediately active)",
+    "dev_wait_confidence": "verified",
+    "production_wait_claim": "Instant for direct OAuth distribution (no review required)",
+    "production_wait_confidence": "verified",
+    "approval_wait": "Instant (no review required)",
+    "confidence": "verified"
+  },
+  "prerequisites": [
+    "Linear workspace account with Admin role",
+    "HTTPS callback URL (http://localhost is permitted for development)",
+    "Client icon and description"
+  ],
+  "path": [
+    {
+      "step_number": 1,
+      "action": "Go to Linear Workspace Settings -> API",
+      "detail": "Open Linear -> Click Workspace Settings -> Navigate to 'API' tab -> Scroll down to 'OAuth applications'.",
+      "who": "you",
+      "source": "https://developers.linear.app/docs/oauth/authentication",
+      "confidence": "verified",
+      "evidence_id": "linear-ev-1"
+    },
+    {
+      "step_number": 2,
+      "action": "Create New OAuth Application",
+      "detail": "Click 'Create OAuth Application'. Enter Application Name, description, and Redirect URIs.",
+      "who": "agent_assisted",
+      "source": "https://developers.linear.app/docs/oauth/authentication",
+      "confidence": "verified",
+      "evidence_id": "linear-ev-1",
+      "generator_action": "redirect_uri"
+    },
+    {
+      "step_number": 3,
+      "action": "Copy Client ID and Client Secret",
+      "detail": "Linear displays the Client ID and generates a Client Secret. Store securely in your environment variables.",
+      "who": "you",
+      "source": "https://developers.linear.app/docs/oauth/authentication",
+      "confidence": "verified",
+      "evidence_id": "linear-ev-1"
+    },
+    {
+      "step_number": 4,
+      "action": "Implement OAuth 2.0 PKCE Code Flow",
+      "detail": "Direct users to https://linear.app/oauth/authorize with client_id, redirect_uri, scope, and code_challenge.",
+      "who": "agent",
+      "source": "https://developers.linear.app/docs/oauth/authentication",
+      "confidence": "verified",
+      "evidence_id": "linear-ev-2",
+      "generator_action": "scope_justification"
+    }
+  ],
+  "config_values": {
+    "redirect_uri_format": "https://yourdomain.com/auth/linear/callback",
+    "auth_url": "https://linear.app/oauth/authorize",
+    "token_url": "https://api.linear.app/oauth/token",
+    "default_scopes": ["read", "write", "issues:create"],
+    "pkce_support": "required",
+    "token_rotation": "optional"
+  },
+  "scopes": [
+    {
+      "scope": "read",
+      "unlocks": "Read user profile, workspace teams, and issues",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "write",
+      "unlocks": "Create, update, and close issues, projects, and comments",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "issues:create",
+      "unlocks": "Granular scope restricted to creating new issues only",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "admin",
+      "unlocks": "Administer workspace members, webhooks, and billing",
+      "sensitivity": "sensitive",
+      "verification_required": false
+    }
+  ],
+  "approval": {
+    "required": false,
+    "what_reviewed": "No review process exists for standard OAuth applications distributed via direct URL. Review is optional only for listing in Linear's public directory.",
+    "typical_rejection_reasons": [
+      "No review rejections occur for private or direct-link apps"
+    ],
+    "what_to_prepare": [
+      "App name, logo, and valid HTTPS callback URL"
+    ]
+  },
+  "blockers_and_fixes": [
+    {
+      "symptom": "invalid_grant: code_challenge verification failed",
+      "cause": "Linear requires PKCE for authorization code flow. If code_verifier does not match code_challenge SHA-256 hash, token exchange fails.",
+      "fix": "Ensure code_verifier is stored in session and hashed with SHA-256 base64url encoding without padding."
+    }
+  ],
+  "agent_vs_human": {
+    "agent_can_do": [
+      "Generate GraphQL queries and mutations using Linear SDK",
+      "Implement PKCE state and challenge generation",
+      "Handle webhook signature validation (Linear-Signature header)"
+    ],
+    "you_must_do": [
+      "Log into Linear workspace settings as Admin",
+      "Create OAuth Application and save Client Secret"
+    ],
+    "handoff_critical_point": "Human must create the OAuth Application in Linear Workspace Settings -> API."
+  },
+  "what_to_do_next": [
+    "Navigate to Linear Settings -> API -> Create OAuth Application.",
+    "Paste Client ID & Secret into your agent environment.",
+    "Run PKCE authorization flow with 'read' and 'write' scopes."
+  ],
+  "evidence": [
+    {
+      "id": "linear-ev-1",
+      "claim": "Linear OAuth applications can be registered directly by any workspace admin with no approval queue",
+      "source_url": "https://developers.linear.app/docs/oauth/authentication",
+      "retrieved_at": "2026-11-01T18:00:00Z",
+      "status": "verified",
+      "snippet": "Workspace administrators can create OAuth applications directly from Workspace Settings -> API. Once created, client credentials are immediately available for use."
+    },
+    {
+      "id": "linear-ev-2",
+      "claim": "Linear supports standard PKCE and GraphQL endpoints for all entity operations",
+      "source_url": "https://developers.linear.app/docs/graphql/working-with-the-graphql-api",
+      "retrieved_at": "2026-11-01T18:00:00Z",
+      "status": "verified",
+      "snippet": "All interactions with Linear data are performed through our GraphQL API at https://api.linear.app/graphql using Bearer token authentication."
+    }
+  ],
+  "uncertainties": [
+    "Linear tokens currently do not expire by default unless revoked, but token rotation support is recommended for future-proofing."
+  ],
+  "last_verified": "2026-11-03"
+}
+

@@ -1,0 +1,9 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+httpx>=0.27
+google-genai>=1.0
+beautifulsoup4>=4.12
+pydantic>=2.6
+publicsuffix2>=2.20191221
+python-dotenv>=1.0
+groq>=0.30.0

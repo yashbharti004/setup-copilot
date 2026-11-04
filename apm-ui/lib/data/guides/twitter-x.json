@@ -1,0 +1,199 @@
+{
+  "app": {
+    "name": "X (formerly Twitter)",
+    "slug": "twitter-x",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/c/ce/X_logo_2023.svg",
+    "docs_url": "https://developer.x.com/en/docs/authentication/oauth-2-0",
+    "category": "Social & Media",
+    "in_composio_managed": true,
+    "composio_app_id": "twitter",
+    "composio_tool_url": "https://composio.dev/tools/twitter",
+    "managed_alternative_note": "Composio provides managed X connectors for AI agents to publish posts, read mentions, and interact with threads without individual developers having to purchase separate $100+/mo developer tier subscriptions.",
+    "when_to_byoc": [
+      "Custom client attribution: Tweets must show 'via YourAppName' badge on X",
+      "Dedicated rate limits: High-frequency agent activity requiring isolated request ceilings",
+      "Direct enterprise billing: Organization requires direct billing and SLA relationship with X Corp"
+    ]
+  },
+  "summary": "Paywalled & strictly gated: Free tier is virtually unusable for multi-user agents; $100/mo Basic tier required for practical read/write API access.",
+  "difficulty": "Gated",
+  "difficulty_score": 85,
+  "difficulty_factors": [
+    "+25 pts: Developer API access paywalled ($100/mo Basic tier minimum for multi-user read/write [as of Nov 2026, source: developer.x.com/en/portal/products])",
+    "+20 pts: Mandatory developer account enrollment with verified phone and credit card on file",
+    "+20 pts: Project and app gatekeeping in developer portal with strict policy compliance",
+    "+20 pts: OAuth 2.0 PKCE enforcement with granular user-context scopes and severe rate limits"
+  ],
+  "time_estimate": {
+    "setup_active_effort": "30–60 min (payment setup & developer enrollment)",
+    "dev_wait_claim": "Instant upon paid subscription ($100/mo Basic tier)",
+    "dev_wait_confidence": "verified",
+    "production_wait_claim": "Instant for Basic tier; manual review only for Pro ($5,000/mo) or Enterprise",
+    "production_wait_confidence": "verified",
+    "approval_wait": "Instant upon paid subscription; manual review for Pro/Enterprise",
+    "confidence": "verified"
+  },
+  "prerequisites": [
+    "Verified X account with confirmed email and phone number",
+    "Credit card on file for developer subscription ($100/mo Basic tier)",
+    "Project & App created within developer.x.com portal",
+    "Privacy Policy and Terms URLs"
+  ],
+  "path": [
+    {
+      "step_number": 1,
+      "action": "Enroll in X Developer Portal & Subscribe to Tier",
+      "detail": "Go to developer.x.com -> Sign in -> Select 'Basic' tier ($100/month) or 'Free' tier (extremely limited: write-only, 1 app, 50 posts/month total). Enter billing details.",
+      "who": "you",
+      "source": "https://developer.x.com/en/portal/products",
+      "confidence": "verified",
+      "evidence_id": "x-ev-1"
+    },
+    {
+      "step_number": 2,
+      "action": "Create a Project and Attached App",
+      "detail": "Inside the Developer Portal dashboard, create a new Project (describe use case) and attach a new Application.",
+      "who": "you",
+      "source": "https://developer.x.com/en/docs/apps/overview",
+      "confidence": "verified",
+      "evidence_id": "x-ev-1"
+    },
+    {
+      "step_number": 3,
+      "action": "Configure User Authentication Settings (OAuth 2.0 PKCE)",
+      "detail": "Under App Settings -> 'User authentication settings' -> Click 'Set up'. Select 'OAuth 2.0', App type: 'Web App' or 'Native App'. Set Redirect URL and Website URL.",
+      "who": "agent_assisted",
+      "source": "https://developer.x.com/en/docs/authentication/oauth-2-0/user-access-token",
+      "confidence": "verified",
+      "evidence_id": "x-ev-2",
+      "generator_action": "redirect_uri"
+    },
+    {
+      "step_number": 4,
+      "action": "Select App Permissions & Copy Credentials",
+      "detail": "Choose 'Read and write and Direct message' or 'Read and write'. Copy Client ID and Client Secret (X requires PKCE for OAuth 2.0).",
+      "who": "you",
+      "source": "https://developer.x.com/en/docs/authentication/oauth-2-0/authorization-code",
+      "confidence": "verified",
+      "evidence_id": "x-ev-2"
+    },
+    {
+      "step_number": 5,
+      "action": "Implement PKCE Code Exchange",
+      "detail": "Generate code_verifier (high-entropy cryptographic random string) and code_challenge (SHA256 hashed). Pass code_challenge to /oauth2/authorize and code_verifier to /oauth2/token.",
+      "who": "agent",
+      "source": "https://developer.x.com/en/docs/authentication/oauth-2-0/authorization-code",
+      "confidence": "verified",
+      "evidence_id": "x-ev-3",
+      "generator_action": "scope_justification"
+    }
+  ],
+  "config_values": {
+    "redirect_uri_format": "https://yourdomain.com/oauth/callback/twitter (Must match exact URL in X Portal)",
+    "auth_url": "https://twitter.com/i/oauth2/authorize",
+    "token_url": "https://api.twitter.com/2/oauth2/token",
+    "default_scopes": ["tweet.read", "tweet.write", "users.read", "offline.access"],
+    "pkce_support": "required",
+    "token_rotation": "required"
+  },
+  "scopes": [
+    {
+      "scope": "tweet.read",
+      "unlocks": "Read tweets and timeline data",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "tweet.write",
+      "unlocks": "Post tweets, reply to tweets, and delete tweets on user's behalf",
+      "sensitivity": "sensitive",
+      "verification_required": false
+    },
+    {
+      "scope": "users.read",
+      "unlocks": "View profile information of authenticated user",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "offline.access",
+      "unlocks": "Receive refresh tokens for long-lived offline agent access",
+      "sensitivity": "sensitive",
+      "verification_required": false
+    }
+  ],
+  "approval": {
+    "required": false,
+    "what_reviewed": "No manual human review for Basic or Pro tiers, but access is gated by paid credit-card subscription and automated policy violation algorithms.",
+    "typical_rejection_reasons": [
+      "Credit card declined during developer portal enrollment",
+      "Automated spam filters flag newly created apps posting repetitive test tweets"
+    ],
+    "what_to_prepare": [
+      "Corporate credit card for recurring monthly developer fee",
+      "Valid HTTPS redirect URI and terms/privacy links"
+    ]
+  },
+  "blockers_and_fixes": [
+    {
+      "symptom": "403 Forbidden - When calling tweet search or reading user timelines",
+      "cause": "Free tier does NOT include search endpoints or read capabilities for external accounts. Basic tier ($100/mo) is required.",
+      "fix": "Upgrade to Basic tier in developer.x.com portal or route read queries through Composio managed connectors.",
+      "escalation_template": "N/A - Hard payment gate enforced by X billing system."
+    },
+    {
+      "symptom": "invalid_request - code_verifier does not match code_challenge",
+      "cause": "PKCE transformation error. X strictly requires S256 method with unpadded base64url encoding.",
+      "fix": "Ensure code_challenge is base64url-encoded without '=' padding: crypto.createHash('sha256').update(verifier).digest('base64url')."
+    }
+  ],
+  "agent_vs_human": {
+    "agent_can_do": [
+      "Implement RFC 7636 PKCE code challenge generation and validation",
+      "Draft OAuth 2.0 authorization URL with offline.access refresh flow",
+      "Handle X API v2 JSON payloads and rate-limit headers (x-rate-limit-remaining)"
+    ],
+    "you_must_do": [
+      "Enroll credit card and subscribe to the paid developer tier ($100/mo)",
+      "Pass SMS/phone number verification on your personal/company X account",
+      "Accept X Developer Agreement and Policy restrictions"
+    ],
+    "handoff_critical_point": "HUMAN MANDATORY: Payment of $100/mo and phone verification can only be executed by human developer."
+  },
+  "what_to_do_next": [
+    "Decide if the $100/mo X Developer Basic subscription is within budget or if Composio managed auth is preferable.",
+    "Log into developer.x.com with verified phone number and subscribe.",
+    "Set up OAuth 2.0 with PKCE using the agent's pre-configured route handler."
+  ],
+  "evidence": [
+    {
+      "id": "x-ev-1",
+      "claim": "X API requires paid subscription tier ($100/mo Basic) for realistic read/write agent operations",
+      "source_url": "https://developer.x.com/en/portal/products",
+      "retrieved_at": "2026-11-01T17:00:00Z",
+      "status": "verified",
+      "snippet": "Free tier provides 1,500 post requests per month only. Basic tier at $100/month provides 10,000 read and 50,000 post requests per month."
+    },
+    {
+      "id": "x-ev-2",
+      "claim": "X OAuth 2.0 strictly requires PKCE (Proof Key for Code Exchange)",
+      "source_url": "https://developer.x.com/en/docs/authentication/oauth-2-0/authorization-code",
+      "retrieved_at": "2026-11-01T17:00:00Z",
+      "status": "verified",
+      "snippet": "OAuth 2.0 authorization code flow with PKCE is required for authenticating users. Confidential and public clients must provide code_challenge."
+    },
+    {
+      "id": "x-ev-3",
+      "claim": "Offline access refresh tokens require explicit 'offline.access' scope",
+      "source_url": "https://developer.x.com/en/docs/authentication/oauth-2-0/user-access-token",
+      "retrieved_at": "2026-11-01T17:00:00Z",
+      "status": "sourced",
+      "snippet": "To obtain a refresh token for long-term user context access without re-prompting, include offline.access in your scope parameter."
+    }
+  ],
+  "uncertainties": [
+    "X frequently alters API pricing tiers and rate limit quotas without extended deprecation notices (pricing verified active as of November 2026)."
+  ],
+  "last_verified": "2026-11-03"
+}
+

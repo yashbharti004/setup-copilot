@@ -1,0 +1,191 @@
+{
+  "app": {
+    "name": "GitHub",
+    "slug": "github",
+    "logo": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+    "docs_url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+    "category": "Developer Tools",
+    "in_composio_managed": true,
+    "composio_app_id": "github",
+    "composio_tool_url": "https://composio.dev/tools/github",
+    "managed_alternative_note": "Composio provides one-click managed auth for GitHub. You do not need to register your own OAuth app unless you require custom white-label branding on the authorization prompt or enterprise organization-level policies.",
+    "when_to_byoc": [
+      "Custom white-label branding: Display your own verified company organization and avatar on the consent screen",
+      "GitHub Enterprise Server: Direct OAuth integration with self-hosted on-premises GitHub Enterprise instances",
+      "Organization SSO policies: Compliance with internal enterprise IP allowlisting or SAML SSO enforcement"
+    ]
+  },
+  "summary": "Instant self-serve setup with zero review wait. Best baseline app for AI agents needing repo or issue access.",
+  "difficulty": "Easy",
+  "difficulty_score": 0,
+  "difficulty_factors": [
+    "+0 pts: No mandatory review required for developer/internal usage",
+    "+0 pts: No business verification required",
+    "+0 pts: Free developer tier includes full OAuth app capabilities",
+    "+0 pts: Instant self-serve client ID and secret generation"
+  ],
+  "time_estimate": {
+    "setup_active_effort": "5–10 min",
+    "dev_wait_claim": "Instant (0 seconds; credentials immediately active)",
+    "dev_wait_confidence": "verified",
+    "production_wait_claim": "Instant (no approval required for direct multi-user OAuth)",
+    "production_wait_confidence": "verified",
+    "approval_wait": "Instant (no review required)",
+    "confidence": "verified"
+  },
+  "prerequisites": [
+    "A free or paid GitHub account",
+    "A designated callback URL (e.g. https://your-agent.com/api/auth/callback/github or http://localhost:3000 for local dev)",
+    "Organization admin permissions if creating an organization-owned OAuth App"
+  ],
+  "path": [
+    {
+      "step_number": 1,
+      "action": "Navigate to Developer Settings in GitHub",
+      "detail": "Go to GitHub Settings -> Developer Settings -> OAuth Apps -> Click 'New OAuth App'.",
+      "who": "you",
+      "source": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+      "confidence": "verified",
+      "evidence_id": "gh-ev-1"
+    },
+    {
+      "step_number": 2,
+      "action": "Fill out Application Name & Homepage URL",
+      "detail": "Provide Application name (e.g. 'My AI Coding Agent'), Homepage URL, and optional description.",
+      "who": "agent_assisted",
+      "source": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+      "confidence": "verified",
+      "evidence_id": "gh-ev-1",
+      "generator_action": "redirect_uri"
+    },
+    {
+      "step_number": 3,
+      "action": "Configure Authorization Callback URL",
+      "detail": "Enter the exact callback URL. GitHub supports wildcard paths only in limited enterprise cases; exact matching is recommended.",
+      "who": "you",
+      "source": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps",
+      "confidence": "verified",
+      "evidence_id": "gh-ev-2"
+    },
+    {
+      "step_number": 4,
+      "action": "Generate Client Secret",
+      "detail": "Click 'Generate a new client secret'. Store it immediately in your agent's secret store (.env). It will never be shown again.",
+      "who": "you",
+      "source": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+      "confidence": "verified",
+      "evidence_id": "gh-ev-1"
+    },
+    {
+      "step_number": 5,
+      "action": "Implement OAuth Code Exchange with Scopes",
+      "detail": "Direct users to https://github.com/login/oauth/authorize with requested scopes (e.g. repo, read:user), exchange the code at https://github.com/login/oauth/access_token.",
+      "who": "agent",
+      "source": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps",
+      "confidence": "verified",
+      "evidence_id": "gh-ev-2",
+      "generator_action": "scope_justification"
+    }
+  ],
+  "config_values": {
+    "redirect_uri_format": "https://your-domain.com/api/auth/callback/github or http://localhost:[port]/callback",
+    "auth_url": "https://github.com/login/oauth/authorize",
+    "token_url": "https://github.com/login/oauth/access_token",
+    "default_scopes": ["read:user", "user:email", "repo"],
+    "pkce_support": "optional",
+    "token_rotation": "optional"
+  },
+  "scopes": [
+    {
+      "scope": "read:user",
+      "unlocks": "Read profile information and public email",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "user:email",
+      "unlocks": "Read user private email addresses",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "repo",
+      "unlocks": "Grants full control of private repositories, issues, pull requests, and commit statuses",
+      "sensitivity": "sensitive",
+      "verification_required": false
+    },
+    {
+      "scope": "workflow",
+      "unlocks": "Update GitHub Actions workflow files",
+      "sensitivity": "sensitive",
+      "verification_required": false
+    }
+  ],
+  "approval": {
+    "required": false,
+    "what_reviewed": "No review process exists for standard OAuth apps. Only GitHub Marketplace apps require review.",
+    "typical_rejection_reasons": [
+      "OAuth apps are never rejected by GitHub staff because there is no review gate",
+      "Organization owners may block third-party OAuth apps via Org Settings -> Third-party application access restrictions"
+    ],
+    "what_to_prepare": [
+      "Application icon (PNG, 500x500)",
+      "Valid callback URL with HTTPS (HTTP allowed only for localhost)"
+    ]
+  },
+  "blockers_and_fixes": [
+    {
+      "symptom": "User sees 'Access denied by organization owner' when connecting an enterprise or team repo",
+      "cause": "The target GitHub organization has OAuth app access restrictions enabled (default in most security-conscious orgs).",
+      "fix": "Instruct the user to click 'Request approval' in the authorization dialog, or have an Org Admin navigate to Organization Settings -> Third-party Access -> Approve the app.",
+      "escalation_template": "Hello [Org Admin], our team is integrating [Agent Name] to assist with repository automation. Could you please grant third-party OAuth approval for application client ID [CLIENT_ID] under Organization Settings -> Third-party Access?"
+    },
+    {
+      "symptom": "redirect_uri_mismatch error during OAuth handshake",
+      "cause": "The redirect_uri passed in the authorization request does not exactly match the callback URL configured in Developer Settings.",
+      "fix": "Ensure exact protocol (https vs http), port, and trailing slash match what is in GitHub Developer Settings."
+    }
+  ],
+  "agent_vs_human": {
+    "agent_can_do": [
+      "Draft OAuth route handlers and PKCE code challenge generation",
+      "Format GitHub API requests and handle rate limit backoff headers",
+      "Prepare scope request URLs based on required actions (issues vs code)",
+      "Validate webhook payloads using HMAC SHA256 secrets"
+    ],
+    "you_must_do": [
+      "Log into GitHub with your personal or organization account",
+      "Click 'New OAuth App' and copy the client secret into your environment vault",
+      "Approve organization access if accessing private corporate repos"
+    ],
+    "handoff_critical_point": "Human must create the OAuth App in GitHub Developer Settings and copy the Client ID and Secret to .env."
+  },
+  "what_to_do_next": [
+    "Open GitHub Developer Settings (https://github.com/settings/developers) and create the app.",
+    "Copy Client ID and generated Secret into your agent environment variables.",
+    "Test the local callback flow with 'read:user' scope."
+  ],
+  "evidence": [
+    {
+      "id": "gh-ev-1",
+      "claim": "GitHub OAuth apps require zero review or approval to start issuing tokens to users",
+      "source_url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+      "retrieved_at": "2026-11-01T12:00:00Z",
+      "status": "verified",
+      "snippet": "Anyone can create an OAuth app. When you create an OAuth app, you register it with GitHub and receive a client ID and client secret. You can distribute this app without submitting it for review unless listing on GitHub Marketplace."
+    },
+    {
+      "id": "gh-ev-2",
+      "claim": "Exact callback URL match is required, though localhost allows custom ports",
+      "source_url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps",
+      "retrieved_at": "2026-11-01T12:00:00Z",
+      "status": "verified",
+      "snippet": "The redirect_uri parameter must match the registered callback URL. For localhost development, subdomains and loopback IPs are supported."
+    }
+  ],
+  "uncertainties": [
+    "GitHub is transitioning toward fine-grained GitHub Apps with specific repository permissions over classic OAuth Apps; classic OAuth apps remain fully supported but GitHub recommends GitHub Apps for enterprise granular permissions."
+  ],
+  "last_verified": "2026-11-03"
+}
+

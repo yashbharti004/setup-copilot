@@ -1,0 +1,202 @@
+{
+  "app": {
+    "name": "Slack",
+    "slug": "slack",
+    "logo": "https://a.slack-edge.com/80588/marketing/img/meta/slack_hash_256.png",
+    "docs_url": "https://api.slack.com/authentication/oauth-v2",
+    "category": "Communication",
+    "in_composio_managed": true,
+    "composio_app_id": "slack",
+    "composio_tool_url": "https://composio.dev/tools/slack",
+    "managed_alternative_note": "Composio provides out-of-the-box Slack integration with pre-configured bot scopes and instant user-level authentication. Use Composio to bypass multi-workspace distribution review.",
+    "when_to_byoc": [
+      "Custom bot branding: Custom bot display name and company icon in customer channels",
+      "Enterprise Grid: Direct deployment into customer Enterprise Grid orgs with custom admin approvals",
+      "Socket Mode / Event Subscriptions: Private WebSocket stream handling behind enterprise VPCs"
+    ]
+  },
+  "summary": "Instant for your own workspace. Requires formal App Directory review (2–3 weeks) only if distributing to external customer workspaces.",
+  "difficulty": "Moderate",
+  "difficulty_score": 45,
+  "difficulty_factors": [
+    "+25 pts: App Directory review required for multi-workspace public distribution",
+    "+10 pts: Requires valid privacy policy, support URL, and comprehensive feature description",
+    "+10 pts: Bot token vs User token permission split and strict OAuth v2 flow"
+  ],
+  "time_estimate": {
+    "setup_active_effort": "20–45 min",
+    "dev_wait_claim": "Instant (0 seconds for development workspace)",
+    "dev_wait_confidence": "verified",
+    "production_wait_claim": "1–3 weeks for public Slack App Directory distribution",
+    "production_wait_confidence": "community",
+    "approval_wait": "Instant for dev workspace; 1–3 weeks for App Directory",
+    "confidence": "community"
+  },
+  "prerequisites": [
+    "A Slack account with admin permissions in a development workspace",
+    "HTTPS redirect URL (Slack rejects plain HTTP even on local domains, except ngrok or tunneling)",
+    "Public Privacy Policy and Support URL if enabling public distribution"
+  ],
+  "path": [
+    {
+      "step_number": 1,
+      "action": "Create Slack App from Scratch",
+      "detail": "Navigate to api.slack.com/apps -> Click 'Create New App' -> Choose 'From scratch' -> Enter App Name and pick Development Workspace.",
+      "who": "you",
+      "source": "https://api.slack.com/quickstart",
+      "confidence": "verified",
+      "evidence_id": "slack-ev-1"
+    },
+    {
+      "step_number": 2,
+      "action": "Configure Bot Scopes (OAuth & Permissions)",
+      "detail": "Under Features -> OAuth & Permissions, scroll to Scopes. Add bot token scopes (e.g. chat:write, channels:read, app_mentions:read).",
+      "who": "agent_assisted",
+      "source": "https://api.slack.com/scopes",
+      "confidence": "verified",
+      "evidence_id": "slack-ev-2",
+      "generator_action": "scope_justification"
+    },
+    {
+      "step_number": 3,
+      "action": "Set Redirect URLs",
+      "detail": "Under OAuth & Permissions -> Redirect URLs, add your HTTPS callback URL (e.g. https://agent.app/api/auth/callback/slack).",
+      "who": "you",
+      "source": "https://api.slack.com/authentication/oauth-v2",
+      "confidence": "verified",
+      "evidence_id": "slack-ev-1",
+      "generator_action": "redirect_uri"
+    },
+    {
+      "step_number": 4,
+      "action": "Install App to Workspace for Local Testing",
+      "detail": "Click 'Install to Workspace' -> Grant requested permissions. You receive a Bot User OAuth Token (xoxb-...) for instant testing.",
+      "who": "you",
+      "source": "https://api.slack.com/quickstart",
+      "confidence": "verified",
+      "evidence_id": "slack-ev-1"
+    },
+    {
+      "step_number": 5,
+      "action": "Activate Public Distribution (If Multi-Tenant)",
+      "detail": "Go to Settings -> Manage Distribution -> Complete the checklist (Hardcoded URLs check, Privacy Policy, Icon). Submit to App Directory if listing publicly.",
+      "who": "agent_assisted",
+      "source": "https://api.slack.com/start/distributing",
+      "confidence": "sourced",
+      "evidence_id": "slack-ev-3",
+      "generator_action": "draft_privacy_policy"
+    }
+  ],
+  "config_values": {
+    "redirect_uri_format": "https://your-domain.com/slack/oauth/callback (HTTPS required)",
+    "auth_url": "https://slack.com/oauth/v2/authorize",
+    "token_url": "https://slack.com/api/oauth.v2.access",
+    "default_scopes": ["chat:write", "channels:read", "commands", "users:read"],
+    "pkce_support": false,
+    "token_rotation": "optional"
+  },
+  "scopes": [
+    {
+      "scope": "chat:write",
+      "unlocks": "Send messages as the agent bot into channels where invited",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "channels:read",
+      "unlocks": "View basic channel names and metadata in public channels",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "channels:history",
+      "unlocks": "Read conversation history in public channels",
+      "sensitivity": "sensitive",
+      "verification_required": true
+    },
+    {
+      "scope": "commands",
+      "unlocks": "Register slash commands (e.g. /agent)",
+      "sensitivity": "basic",
+      "verification_required": false
+    }
+  ],
+  "approval": {
+    "required": true,
+    "what_reviewed": "Only required for public distribution to non-dev workspaces. Slack reviews security, scope minimization, functional user commands, and landing page privacy policies.",
+    "typical_rejection_reasons": [
+      "Over-requesting broad scopes (e.g. requesting admin or channels:history when only chat:write is needed)",
+      "Broken OAuth install button or missing error handling in callback flow",
+      "Privacy policy does not explicitly mention data retention or deletion terms"
+    ],
+    "what_to_prepare": [
+      "Privacy policy and terms of service hosted on a public domain",
+      "High-resolution 512x512 PNG app icon",
+      "Detailed step-by-step test instructions and screencast video for the Slack review team"
+    ]
+  },
+  "blockers_and_fixes": [
+    {
+      "symptom": "invalid_auth or not_authed when testing API methods",
+      "cause": "Attempting to use a User token where a Bot token (xoxb) is expected, or bot not invited to the target channel.",
+      "fix": "Invite your bot to the channel (/invite @bot_name) and pass the 'Authorization: Bearer xoxb-...' header.",
+      "escalation_template": "N/A - Channel membership is a local workspace action."
+    },
+    {
+      "symptom": "team_not_authorized during OAuth handshake",
+      "cause": "Public distribution has not been activated, so only the development workspace can install the app.",
+      "fix": "In Slack App settings, go to 'Manage Distribution', verify all checklist items, and turn on public distribution.",
+      "escalation_template": "Hello Slack Support, we submitted our app [APP_ID] for App Directory review on [DATE]. We are awaiting initial feedback regarding scope review."
+    }
+  ],
+  "agent_vs_human": {
+    "agent_can_do": [
+      "Draft the Slack manifest JSON with exact scopes, events, and slash commands",
+      "Generate the privacy policy and terms boilerplate needed for distribution checklist",
+      "Construct OAuth v2 code exchange handlers with workspace team ID tracking",
+      "Draft submission notes explaining each scope's business purpose for the Slack review team"
+    ],
+    "you_must_do": [
+      "Own or create a Slack development workspace",
+      "Accept Slack Developer Terms and click 'Install to Workspace'",
+      "Submit the public distribution application form and answer reviewer inquiries"
+    ],
+    "handoff_critical_point": "Agent outputs the Slack manifest JSON; human pastes into Slack App Manifest or creates app manually in api.slack.com."
+  },
+  "what_to_do_next": [
+    "Create app from manifest or scratch at https://api.slack.com/apps.",
+    "Add 'chat:write' and 'channels:read' bot scopes and install to your dev workspace.",
+    "Decide if multi-workspace distribution is required; if so, prepare privacy policy."
+  ],
+  "evidence": [
+    {
+      "id": "slack-ev-1",
+      "claim": "Slack apps can be tested instantly in your development workspace without review",
+      "source_url": "https://api.slack.com/quickstart",
+      "retrieved_at": "2026-11-01T14:00:00Z",
+      "status": "verified",
+      "snippet": "You can install your app to your development workspace immediately to begin testing features and interacting with the Slack Web API."
+    },
+    {
+      "id": "slack-ev-2",
+      "claim": "Slack OAuth v2 strictly separates Bot Token Scopes from User Token Scopes",
+      "source_url": "https://api.slack.com/scopes",
+      "retrieved_at": "2026-11-01T14:00:00Z",
+      "status": "sourced",
+      "snippet": "OAuth v2 granular permissions allow you to request bot scopes that apply to your bot user, and user scopes that act on behalf of the installing user."
+    },
+    {
+      "id": "slack-ev-3",
+      "claim": "Public distribution requires review if listed in App Directory; direct install link is unreviewed if distribution enabled",
+      "source_url": "https://api.slack.com/start/distributing",
+      "retrieved_at": "2026-11-01T14:00:00Z",
+      "status": "sourced",
+      "snippet": "Public distribution allows anyone with the direct install link to add your app. Submitting to the Slack App Directory requires a formal review process."
+    }
+  ],
+  "uncertainties": [
+    "Slack App Directory review timeline is not officially committed to a fixed SLA; official docs say 'several days to a few weeks', community forums report 2–3 weeks on average."
+  ],
+  "last_verified": "2026-11-03"
+}
+

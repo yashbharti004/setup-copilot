@@ -1,0 +1,246 @@
+{
+  "app": {
+    "name": "Google Workspace (Gmail & Drive)",
+    "slug": "google-workspace",
+    "logo": "https://www.gstatic.com/images/branding/product/2x/googleg_48dp.png",
+    "docs_url": "https://developers.google.com/identity/protocols/oauth2",
+    "category": "Productivity & Communication",
+    "in_composio_managed": true,
+    "composio_app_id": "google-drive",
+    "composio_tool_url": "https://composio.dev/tools/google-drive",
+    "managed_alternative_note": "CRITICAL COST & TIME SAVER: Registering your own Google OAuth app with Gmail or Drive scopes requires 2–6 weeks of OAuth review and up to $15,000 in third-party CASA security assessments. Composio provides pre-verified enterprise Google connectors that work out of the box.",
+    "when_to_byoc": [
+      "Custom branding: Display your own verified company logo and domain on Google's consent screen",
+      "Compliance custody: Organization policy requires internal custody of GCP client secrets and refresh tokens",
+      "Enterprise scopes: Accessing proprietary Google Workspace Admin SDK or internal Google Cloud APIs"
+    ]
+  },
+  "summary": "Hardest mainstream provider: sensitive/restricted scopes trigger mandatory Google OAuth verification, YouTube demo video, domain validation, and CASA security assessments.",
+  "difficulty": "Hard",
+  "difficulty_score": 80,
+  "difficulty_factors": [
+    "+25 pts: App review mandatory for production (unverified apps capped at 100 test users with Google unverified warning)",
+    "+25 pts: Restricted scopes (Gmail/Drive) require high-scrutiny policy review",
+    "+20 pts: Third-party Cloud Application Security Assessment (CASA Tier 2/3) required for restricted scopes ($5,000–$15,000 fee [as of Nov 2026, source: appdefensealliance.org/casa/tier2])",
+    "+10 pts: Requires YouTube demo video submission and Google Search Console domain ownership verification"
+  ],
+  "time_estimate": {
+    "setup_active_effort": "2–4 hours (documentation & video recording)",
+    "dev_wait_claim": "Instant for test users (up to 100 users with unverified warning)",
+    "dev_wait_confidence": "verified",
+    "production_wait_claim": "2–6 weeks (official docs state 3–5 business days for initial review; community reports 3–6 weeks total cycle)",
+    "production_wait_confidence": "community",
+    "approval_wait": "Instant for dev; 2–6 weeks for production review",
+    "confidence": "community"
+  },
+  "prerequisites": [
+    "Google Cloud Platform (GCP) account with billing account enabled",
+    "Custom domain with ownership verified via Google Search Console",
+    "Public Privacy Policy that includes a dedicated Google User Data Limited Use Disclosure",
+    "Recorded YouTube demo video (unlisted) showing client ID in URL bar and grant flow"
+  ],
+  "path": [
+    {
+      "step_number": 1,
+      "action": "Create GCP Project & Enable APIs",
+      "detail": "Open Google Cloud Console -> Create new Project. Navigate to APIs & Services -> Library -> Enable 'Gmail API' and 'Google Drive API'.",
+      "who": "you",
+      "source": "https://developers.google.com/workspace/guides/create-project",
+      "confidence": "verified",
+      "evidence_id": "goog-ev-1"
+    },
+    {
+      "step_number": 2,
+      "action": "Configure OAuth Consent Screen",
+      "detail": "Choose User Type: 'External' (for any Google user) or 'Internal' (Workspace enterprise only). Fill App Name, Support Email, and authorized domains.",
+      "who": "you",
+      "source": "https://developers.google.com/identity/protocols/oauth2/production-readiness/brand-verification",
+      "confidence": "verified",
+      "evidence_id": "goog-ev-2"
+    },
+    {
+      "step_number": 3,
+      "action": "Select & Justify Scopes",
+      "detail": "Add required scopes. Non-sensitive (profile/email) do not require review. Sensitive (drive.readonly) or Restricted (gmail.modify, mail.google.com) trigger verification.",
+      "who": "agent_assisted",
+      "source": "https://developers.google.com/identity/protocols/oauth2/scopes",
+      "confidence": "verified",
+      "evidence_id": "goog-ev-3",
+      "generator_action": "scope_justification"
+    },
+    {
+      "step_number": 4,
+      "action": "Add Test Users (For Sandbox Development)",
+      "detail": "While Publishing Status is 'Testing', explicitly add developer and tester Gmail addresses. Only these 100 emails can authenticate.",
+      "who": "you",
+      "source": "https://support.google.com/cloud/answer/10311685",
+      "confidence": "verified",
+      "evidence_id": "goog-ev-4"
+    },
+    {
+      "step_number": 5,
+      "action": "Create OAuth 2.0 Client Credentials",
+      "detail": "Go to Credentials -> Create Credentials -> OAuth client ID -> Web application. Add Authorized redirect URIs.",
+      "who": "you",
+      "source": "https://developers.google.com/identity/protocols/oauth2/web-server",
+      "confidence": "verified",
+      "evidence_id": "goog-ev-1",
+      "generator_action": "redirect_uri"
+    },
+    {
+      "step_number": 6,
+      "action": "Submit for Verification & CASA Security Assessment",
+      "detail": "Click 'Publish App'. Submit domain verification, privacy policy, justification letter, and YouTube unlisted demo link. If using restricted scopes, initiate CASA Tier 2 scan.",
+      "who": "agent_assisted",
+      "source": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+      "confidence": "sourced",
+      "evidence_id": "goog-ev-5",
+      "generator_action": "review_email"
+    }
+  ],
+  "config_values": {
+    "redirect_uri_format": "https://yourdomain.com/auth/google/callback (HTTPS required, localhost allowed)",
+    "auth_url": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_url": "https://oauth2.googleapis.com/token",
+    "default_scopes": [
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "pkce_support": true,
+    "token_rotation": "required"
+  },
+  "scopes": [
+    {
+      "scope": "https://www.googleapis.com/auth/userinfo.profile",
+      "unlocks": "Read basic profile info",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/drive.readonly",
+      "unlocks": "Read files, metadata, and folders across Google Drive",
+      "sensitivity": "sensitive",
+      "verification_required": true
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/drive.file",
+      "unlocks": "View and manage only files created or opened by this agent (Recommended over full drive)",
+      "sensitivity": "sensitive",
+      "verification_required": true
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/gmail.send",
+      "unlocks": "Send email messages on behalf of the user",
+      "sensitivity": "restricted",
+      "verification_required": true
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/gmail.modify",
+      "unlocks": "Read, draft, label, and delete emails",
+      "sensitivity": "restricted",
+      "verification_required": true
+    }
+  ],
+  "approval": {
+    "required": true,
+    "what_reviewed": "Google Trust & Safety reviews branding, privacy policy compliance with Limited Use requirements, exact justification for each scope, OAuth consent screen flow in video demo, and CASA cyber assessment.",
+    "typical_rejection_reasons": [
+      "Privacy policy does not include the exact 'Google API Services User Data Policy Limited Use' clause",
+      "YouTube video does not clearly display the Client ID in the browser URL bar or fails to show OAuth grant",
+      "Requesting broad scopes (e.g. mail.google.com) when a narrower scope (gmail.send) suffices",
+      "Domain not verified in Google Search Console under the same account as the GCP Project owner"
+    ],
+    "what_to_prepare": [
+      "Unlisted YouTube demo video showing end-to-end OAuth flow with browser address bar visible",
+      "Privacy Policy URL with Limited Use disclosure section",
+      "Google Search Console domain ownership verification token",
+      "Scope justification document explaining why an AI agent cannot function with narrower permissions"
+    ]
+  },
+  "blockers_and_fixes": [
+    {
+      "symptom": "Google says 'This app isn't verified' with a red scary warning screen",
+      "cause": "App is published or in testing mode, and user is not on the test users list, or OAuth consent screen has not passed verification.",
+      "fix": "For testing: add user email under 'Test users' tab in GCP Console. For public launch: submit app for OAuth verification.",
+      "escalation_template": "Hello Google Trust & Safety Team, regarding Project [PROJECT_NUMBER] and Client ID [CLIENT_ID], we have resolved the requested privacy policy disclosures and re-submitted our verification request."
+    },
+    {
+      "symptom": "Error 403: access_denied - You cannot sign in to this app because it doesn't comply with Google's OAuth 2.0 policy",
+      "cause": "Attempting OAuth flow from an unapproved webview or using an unauthorized redirect URI.",
+      "fix": "Google blocks embedded webviews for OAuth. Open system browser (external browser tab) and verify URI matches GCP console."
+    },
+    {
+      "symptom": "CASA Tier 2 assessment requirement notification from Google",
+      "cause": "Triggered automatically when applying for restricted scopes (Gmail, Drive full access).",
+      "fix": "Use an authorized CASA validation partner (e.g. PwC, Bishop Fox, Leviathan Security) or migrate to drive.file / Composio managed auth."
+    }
+  ],
+  "agent_vs_human": {
+    "agent_can_do": [
+      "Draft the exact Google Limited Use Disclosure markdown for your privacy policy",
+      "Generate detailed scope justification text explaining agent workflows for Google Trust & Safety",
+      "Write the verification submission description letter",
+      "Construct PKCE authorization code exchange and refresh token rotation handlers"
+    ],
+    "you_must_do": [
+      "Create Google Cloud Project and verify domain in Google Search Console",
+      "Record and upload the unlisted YouTube video showing the OAuth URL bar with client ID",
+      "Submit the verification form in GCP Console and pay CASA assessment fees if applicable"
+    ],
+    "handoff_critical_point": "Human must record the YouTube screencast showing the URL bar and submit the verification request in Google Cloud Console."
+  },
+  "what_to_do_next": [
+    "Check if Composio Managed Auth fits your use case (saves 3–6 weeks and thousands in CASA audits).",
+    "If BYOC is mandatory: Create GCP Project, enable Gmail/Drive APIs, and configure OAuth Consent Screen in 'Testing' mode.",
+    "Draft your Google Limited Use policy and scope justification using the agent generator."
+  ],
+  "evidence": [
+    {
+      "id": "goog-ev-1",
+      "claim": "Google requires OAuth client creation in GCP console with strict HTTPS or localhost redirect URIs",
+      "source_url": "https://developers.google.com/identity/protocols/oauth2/web-server",
+      "retrieved_at": "2026-11-01T15:00:00Z",
+      "status": "verified",
+      "snippet": "Web applications must use HTTPS for all redirect URIs. HTTP is permitted exclusively for localhost development."
+    },
+    {
+      "id": "goog-ev-2",
+      "claim": "Testing mode restricts OAuth to a maximum of 100 explicitly added test users",
+      "source_url": "https://support.google.com/cloud/answer/10311685",
+      "retrieved_at": "2026-11-01T15:00:00Z",
+      "status": "verified",
+      "snippet": "While publishing status is Testing, only users added to the test user list can access the app. The list is limited to 100 users."
+    },
+    {
+      "id": "goog-ev-3",
+      "claim": "Gmail and Drive full scopes are classified as Restricted under Google API User Data Policy",
+      "source_url": "https://developers.google.com/identity/protocols/oauth2/scopes",
+      "retrieved_at": "2026-11-01T15:00:00Z",
+      "status": "verified",
+      "snippet": "Restricted scopes include full Gmail access and full Google Drive access. Using restricted scopes requires annual third-party CASA security verification."
+    },
+    {
+      "id": "goog-ev-4",
+      "claim": "Unverified apps display a prominent 'Google hasn't verified this app' warning dialog",
+      "source_url": "https://support.google.com/cloud/answer/7454865",
+      "retrieved_at": "2026-11-01T15:00:00Z",
+      "status": "verified",
+      "snippet": "When a project requests sensitive or restricted scopes before verification is complete, users see an unverified app screen."
+    },
+    {
+      "id": "goog-ev-5",
+      "claim": "Verification requires YouTube demo video, domain verification via Search Console, and privacy policy",
+      "source_url": "https://developers.google.com/identity/protocols/oauth2/production-readiness/restricted-scope-verification",
+      "retrieved_at": "2026-11-01T15:00:00Z",
+      "status": "sourced",
+      "snippet": "You must provide an unlisted YouTube video link clearly showing the client ID in the address bar and demonstrating how requested scopes are used in the application."
+    }
+  ],
+  "uncertainties": [
+    "Google CASA Tier 2 assessment pricing varies by authorized security lab ($3,000–$15,000+ as of Nov 2026); Google does not set official lab prices.",
+    "Initial Google review turnaround is stated as 3–5 business days, but multi-round email exchanges often prolong total approval to 4–6 weeks."
+  ],
+  "last_verified": "2026-11-03"
+}
+

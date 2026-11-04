@@ -1,0 +1,191 @@
+{
+  "app": {
+    "name": "Notion",
+    "slug": "notion",
+    "logo": "https://upload.wikimedia.org/wikipedia/commons/4/45/Notion_app_logo.png",
+    "docs_url": "https://developers.notion.com/docs/authorization",
+    "category": "Productivity & Knowledge",
+    "in_composio_managed": true,
+    "composio_app_id": "notion",
+    "composio_tool_url": "https://composio.dev/tools/notion",
+    "managed_alternative_note": "Composio provides managed Notion integration handling multi-workspace token exchange, page permission scopes, and token refresh automatically.",
+    "when_to_byoc": [
+      "Custom branding: Display your own application name and logo on Notion's authorization page",
+      "Dedicated workspace rate limits: Separate your traffic from shared multi-tenant limits (3 req/sec per integration)",
+      "Internal integration tokens: Single-workspace direct internal integrations using secret tokens"
+    ]
+  },
+  "summary": "Dual-mode setup: Internal integrations are instant via API token. Public multi-workspace OAuth is self-serve without review; gallery listing is optional.",
+  "difficulty": "Moderate",
+  "difficulty_score": 25,
+  "difficulty_factors": [
+    "+15 pts: Public OAuth requires switching integration mode and configuring HTTPS redirects",
+    "+10 pts: Page-level permission model requires explicit workspace page sharing or grant selection",
+    "+0 pts: No review required for public OAuth link distribution (Gallery review is optional)"
+  ],
+  "time_estimate": {
+    "setup_active_effort": "15–25 min",
+    "dev_wait_claim": "Instant (0 seconds for internal and direct OAuth distribution)",
+    "dev_wait_confidence": "verified",
+    "production_wait_claim": "2–4 weeks only if submitting to public Notion Integrations Gallery",
+    "production_wait_confidence": "community",
+    "approval_wait": "Instant for direct OAuth; 2–4 weeks for public Gallery",
+    "confidence": "community"
+  },
+  "prerequisites": [
+    "Notion workspace with admin permissions or permissions to create integrations",
+    "Public HTTPS redirect URI (HTTP allowed only for localhost)",
+    "Privacy Policy and Terms URL if enabling Public OAuth distribution"
+  ],
+  "path": [
+    {
+      "step_number": 1,
+      "action": "Create Integration at notion.so/my-integrations",
+      "detail": "Go to 'My Integrations' -> Click '+ New integration'. Select associated workspace, assign an App Name, and upload an icon.",
+      "who": "you",
+      "source": "https://developers.notion.com/docs/create-a-notion-integration",
+      "confidence": "verified",
+      "evidence_id": "notion-ev-1"
+    },
+    {
+      "step_number": 2,
+      "action": "Choose Integration Type (Internal vs Public)",
+      "detail": "By default, integrations are Internal (scoped to your workspace via secret token). In Distribution tab, toggle 'Make integration public' to enable OAuth 2.0 for external users.",
+      "who": "you",
+      "source": "https://developers.notion.com/docs/authorization",
+      "confidence": "verified",
+      "evidence_id": "notion-ev-1"
+    },
+    {
+      "step_number": 3,
+      "action": "Configure OAuth Redirect URI and Company Info",
+      "detail": "Provide your HTTPS callback URI, Company Name, Website, and Privacy Policy link. Notion generates OAuth Client ID and Client Secret.",
+      "who": "agent_assisted",
+      "source": "https://developers.notion.com/docs/authorization",
+      "confidence": "verified",
+      "evidence_id": "notion-ev-2",
+      "generator_action": "redirect_uri"
+    },
+    {
+      "step_number": 4,
+      "action": "Configure Content Capabilities",
+      "detail": "Under Capabilities, toggle: 'Read content', 'Update content', 'Insert content', and 'Read user information without email addresses'.",
+      "who": "agent_assisted",
+      "source": "https://developers.notion.com/docs/authorization",
+      "confidence": "verified",
+      "evidence_id": "notion-ev-2",
+      "generator_action": "scope_justification"
+    },
+    {
+      "step_number": 5,
+      "action": "Implement OAuth Authorization URL & Token Exchange",
+      "detail": "Direct users to https://api.notion.com/v1/oauth/authorize with client_id, response_type=code, and redirect_uri. Exchange code with HTTP Basic Auth (Client ID + Secret).",
+      "who": "agent",
+      "source": "https://developers.notion.com/docs/authorization",
+      "confidence": "verified",
+      "evidence_id": "notion-ev-2"
+    }
+  ],
+  "config_values": {
+    "redirect_uri_format": "https://yourdomain.com/api/auth/callback/notion",
+    "auth_url": "https://api.notion.com/v1/oauth/authorize",
+    "token_url": "https://api.notion.com/v1/oauth/token",
+    "default_scopes": ["read_content", "update_content", "insert_content"],
+    "pkce_support": false,
+    "token_rotation": false
+  },
+  "scopes": [
+    {
+      "scope": "read_content",
+      "unlocks": "Read page properties, blocks, and database contents",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "update_content",
+      "unlocks": "Modify existing pages, block text, and update database entries",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "insert_content",
+      "unlocks": "Create new sub-pages, database entries, and blocks",
+      "sensitivity": "basic",
+      "verification_required": false
+    },
+    {
+      "scope": "read_user_info",
+      "unlocks": "Read names and profile photos of workspace members",
+      "sensitivity": "basic",
+      "verification_required": false
+    }
+  ],
+  "approval": {
+    "required": false,
+    "what_reviewed": "Public OAuth direct links work without any review. Review is required ONLY if submitting to the Notion Integrations Gallery (which provides marketplace discoverability).",
+    "typical_rejection_reasons": [
+      "Gallery submissions: Insufficient documentation or unclear onboarding for non-technical users",
+      "Failure to explain why the integration requires full content read/write capabilities"
+    ],
+    "what_to_prepare": [
+      "Public privacy policy and terms of service",
+      "High resolution app icon (square PNG)",
+      "Clear explanation of why workspace access is requested"
+    ]
+  },
+  "blockers_and_fixes": [
+    {
+      "symptom": "object_not_found error (HTTP 404) when querying a page or database that definitely exists",
+      "cause": "The Notion integration has not been granted access to that specific page or parent database. Notion's permission model requires explicit page grants.",
+      "fix": "Instruct the user: In Notion, open the target page/database -> click '...' (top right) -> Connections -> Connect to [Your App Name].",
+      "escalation_template": "N/A - Page sharing is handled within the user's Notion workspace UI."
+    },
+    {
+      "symptom": "invalid_grant during token exchange",
+      "cause": "The authorization code was already consumed (one-time use) or expired, or redirect_uri mismatch occurred.",
+      "fix": "Ensure redirect_uri in the POST /v1/oauth/token body matches the authorize request exactly, and perform token exchange immediately."
+    }
+  ],
+  "agent_vs_human": {
+    "agent_can_do": [
+      "Generate OAuth HTTP Basic authentication exchange code",
+      "Parse and traverse Notion block trees and nested database schemas",
+      "Draft integration capability justifications",
+      "Handle Notion rate limiting (average 3 requests per second per token)"
+    ],
+    "you_must_do": [
+      "Create integration in notion.so/my-integrations",
+      "Switch integration to 'Public' if distributing to external teams",
+      "Advise end users to share specific workspace pages with your integration connection"
+    ],
+    "handoff_critical_point": "Human must create the integration at notion.so/my-integrations and toggle to Public if serving multi-tenant users."
+  },
+  "what_to_do_next": [
+    "Decide whether your agent needs Internal (single workspace) or Public (multi-tenant) access.",
+    "Create the integration at https://www.notion.so/my-integrations.",
+    "Add the client secret to your agent and test token exchange."
+  ],
+  "evidence": [
+    {
+      "id": "notion-ev-1",
+      "claim": "Internal integrations provide instant access via secret token without an OAuth exchange flow",
+      "source_url": "https://developers.notion.com/docs/create-a-notion-integration",
+      "retrieved_at": "2026-11-01T16:00:00Z",
+      "status": "verified",
+      "snippet": "Internal integrations are private to your workspace. An internal integration generates an Internal Integration Secret you can immediately use in the Authorization header."
+    },
+    {
+      "id": "notion-ev-2",
+      "claim": "Public integrations enable OAuth 2.0 and do not require Notion review for direct link distribution",
+      "source_url": "https://developers.notion.com/docs/authorization",
+      "retrieved_at": "2026-11-01T16:00:00Z",
+      "status": "verified",
+      "snippet": "Public integrations allow any Notion user to connect their workspace via OAuth 2.0. Direct link distribution does not require prior approval from Notion."
+    }
+  ],
+  "uncertainties": [
+    "Notion does not support PKCE for OAuth 2.0; client credentials must be exchanged securely on a backend server."
+  ],
+  "last_verified": "2026-11-03"
+}
+

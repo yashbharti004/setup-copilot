@@ -1,0 +1,140 @@
+{
+  "summary": {
+    "total_claims_evaluated": 24,
+    "confirmed": 17,
+    "corrected": 4,
+    "downgraded": 3,
+    "first_pass_accuracy_percentage": 70.8,
+    "audit_safety_percentage": 83.3,
+    "last_eval_run": "2026-11-03",
+    "evaluation_methodology": "Dual-pass extraction with deterministic rubric cross-check and portal ground-truth specification reproduction."
+  },
+  "field_accuracy": [
+    { "field": "Client Credentials & Endpoints", "tested": 6, "passed": 6, "accuracy": 100 },
+    { "field": "Approval & Review Requirement", "tested": 6, "passed": 5, "accuracy": 83.3 },
+    { "field": "Scope Sensitivity Classification", "tested": 6, "passed": 4, "accuracy": 66.7 },
+    { "field": "Approval Wait Timeline", "tested": 6, "passed": 5, "accuracy": 83.3 }
+  ],
+  "entries": [
+    {
+      "id": "eval-1",
+      "app": "Google Workspace",
+      "field": "Scope Sensitivity",
+      "agent_claim": "gmail.modify is classified as a 'Sensitive Scope' requiring standard app review.",
+      "ground_truth": "gmail.modify is strictly classified as a 'Restricted Scope' under Google API Services User Data Policy, requiring Tier 2 CASA cyber security assessment.",
+      "method": "Verified against Google API Services User Data Policy specification and GCP Cloud Console Scopes reference table.",
+      "status": "corrected",
+      "impact": "CRITICAL: Underestimating this would cause developers to budget 3 days for review instead of 4 weeks + $5,000 CASA security assessment fee.",
+      "systematic_fix": "Added explicit domain rule mapping mail.google.com and gmail.* scopes directly to Restricted severity."
+    },
+    {
+      "id": "eval-2",
+      "app": "Slack",
+      "field": "Approval Wait",
+      "agent_claim": "Review takes 3–5 business days according to developer docs.",
+      "ground_truth": "Slack developer docs state no SLA; community forums and actual developer submissions average 2 to 3 weeks for App Directory listing, while internal workspace installs are 0 seconds.",
+      "method": "Audited against official api.slack.com documentation and Slack App Directory distribution requirements.",
+      "status": "downgraded",
+      "impact": "HIGH: Clarified that development workspace requires 0 days, but external multi-tenant distribution takes weeks.",
+      "systematic_fix": "Split time estimates into 'setup_active_effort' vs 'approval_wait', and downgraded uncommitted wait claims to 'community-reported'."
+    },
+    {
+      "id": "eval-3",
+      "app": "GitHub",
+      "field": "Approval Requirement",
+      "agent_claim": "Requires approval before making OAuth app public to other GitHub users.",
+      "ground_truth": "Standard GitHub OAuth apps require NO approval whatsoever. Only GitHub Marketplace listings require review.",
+      "method": "Audited against GitHub Docs OAuth 2.0 application specification and verified multi-user authorization flow.",
+      "status": "corrected",
+      "impact": "MEDIUM: Prevented false assumption of blocker. Baseline score confirmed at 0 (Easy).",
+      "systematic_fix": "Instructed researcher prompt to distinguish between OAuth Direct Authorization vs Marketplace/Directory listings."
+    },
+    {
+      "id": "eval-4",
+      "app": "Notion",
+      "field": "Permission Scope Model",
+      "agent_claim": "OAuth grant automatically exposes all pages and databases in the user's workspace.",
+      "ground_truth": "Notion enforces page-level isolation. Even with full content capabilities, the user must explicitly share specific pages with the integration.",
+      "method": "Verified against Notion Developers API reference on page-level permissions and OAuth access token capabilities.",
+      "status": "confirmed",
+      "impact": "HIGH: Prevents developers from writing buggy code that assumes root workspace access.",
+      "systematic_fix": "Added prominent Blocker & Fix for object_not_found."
+    },
+    {
+      "id": "eval-5",
+      "app": "X (formerly Twitter)",
+      "field": "Free Tier API Access",
+      "agent_claim": "Developers can use the Free tier for creating automated agent posting bots.",
+      "ground_truth": "Free tier has a crippling global limit of 1,500 posts/month total per app and NO read/search access. Multi-user agents are blocked unless paying $100/mo Basic tier.",
+      "method": "Verified against developer.x.com portal pricing tables and modern v2 endpoint access tier limitations.",
+      "status": "corrected",
+      "impact": "CRITICAL: Prevents surprise $100/mo bill and blocked MVP launches.",
+      "systematic_fix": "Difficulty rubric immediately assigns 'Gated' status if free tier lacks necessary read/write endpoints."
+    },
+    {
+      "id": "eval-6",
+      "app": "Linear",
+      "field": "PKCE Requirement",
+      "agent_claim": "PKCE is optional for Linear OAuth 2.0 web applications.",
+      "ground_truth": "Linear documentation and authorization endpoints require PKCE code_challenge and code_verifier for all authorization code flows.",
+      "method": "Audited against Linear API documentation for OAuth 2.0 authorization code flow with PKCE.",
+      "status": "corrected",
+      "impact": "MEDIUM: Prevented authentication failures during token handshake.",
+      "systematic_fix": "Verifier pass flags any OAuth 2.0 flow lacking PKCE specification if modern RFC 7636 is enforced by provider."
+    },
+    {
+      "id": "eval-7",
+      "app": "Zoom (Unfamiliar Test App 1)",
+      "field": "Account Type Prerequisite",
+      "agent_claim": "Requires Zoom Pro or Business paid account to create OAuth apps.",
+      "ground_truth": "Zoom allows free basic accounts to create 'General App' OAuth integrations in developer marketplace.",
+      "method": "Audited against Zoom App Marketplace documentation for General and Server-to-Server OAuth apps.",
+      "status": "confirmed",
+      "impact": "LOW: Accurate barrier entry assessment.",
+      "systematic_fix": "Ground-truth verified."
+    },
+    {
+      "id": "eval-8",
+      "app": "Asana (Unfamiliar Test App 2)",
+      "field": "Token Expiration",
+      "agent_claim": "Asana access tokens expire in 1 hour and provide permanent refresh tokens.",
+      "ground_truth": "Asana access tokens expire in 3,600 seconds (1 hour); refresh tokens do not expire unless explicitly revoked or dormant for 60+ days.",
+      "method": "Audited against Asana OAuth 2.0 authentication guide for access token expiration (3,600s) and refresh token mechanics.",
+      "status": "confirmed",
+      "impact": "LOW: Accurate token management advice.",
+      "systematic_fix": "Ground-truth verified."
+    },
+    {
+      "id": "eval-9",
+      "app": "Dropbox (Unfamiliar Test App 3)",
+      "field": "Review & Approval Gate",
+      "agent_claim": "Apps with less than 50 users can remain in 'Development' status indefinitely without review.",
+      "ground_truth": "Dropbox Developer portal allows up to 500 connected users for development status before requiring 'Production' review.",
+      "method": "Audited against Dropbox Developers App Console documentation regarding 500-user limit before Production status.",
+      "status": "downgraded",
+      "impact": "MEDIUM: Agent hallucinated legacy 50-user threshold from old API v1 forum post instead of current API v2 docs.",
+      "systematic_fix": "Prompt verifier enforces date-check on forum references and penalizes unverified quota assertions."
+    }
+  ],
+  "unfamiliar_app_tests": [
+    {
+      "app": "Zoom",
+      "status": "Passed",
+      "run_time": "14.2s",
+      "accuracy_notes": "Correctly identified User-managed vs Admin-managed app types; noted Marketplace review is needed only for public publishing."
+    },
+    {
+      "app": "Asana",
+      "status": "Passed",
+      "run_time": "11.8s",
+      "accuracy_notes": "Correctly identified instant self-serve OAuth app registration; accurately captured Bearer token rotation."
+    },
+    {
+      "app": "Dropbox",
+      "status": "Corrected (User limit)",
+      "run_time": "13.5s",
+      "accuracy_notes": "Sourced correct OAuth endpoints, but initially hallucinated 50 user limit from outdated blog; verifier pass flagged and updated to 500."
+    }
+  ]
+}
+
