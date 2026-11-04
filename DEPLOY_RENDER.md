@@ -28,7 +28,9 @@ If you haven't pushed the repo to GitHub yet:
    - **Runtime**: `Docker`
    - **Plan**: `Free`
 5. Under **Environment Variables**, paste your:
-   - `GEMINI_API_KEY`: *Your Google Gemini API Key*
+   - `GROQ_API_KEY`: *Your Groq API Key*
+   - `GEMINI_API_KEY`: *(Optional or required if using Gemini extraction)*
+   - `GROQ_MODEL`: `openai/gpt-oss-20b` or `llama-3.3-70b-versatile` (defaults to `openai/gpt-oss-20b`)
    - `TAVILY_API_KEY`: *(Optional) Search key for live unfamiliar provider discovery*
 6. Click **Apply**.
 
@@ -49,6 +51,7 @@ If you prefer creating a Web Service directly without Blueprints:
    - **Health Check Path**: `/api/health`
 5. In **Environment Variables**, add:
    - `NODE_ENV`: `production`
-   - `GEMINI_API_KEY`: `your_key_here`
+   - `GROQ_API_KEY`: `your_groq_api_key_here`
+   - `GEMINI_API_KEY`: `your_gemini_api_key_here`
 6. Click **Create Web Service**.
 
