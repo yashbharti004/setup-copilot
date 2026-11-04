@@ -34,3 +34,16 @@ def test_official_detection():
     assert not is_official("https://someone.github.io/post", tokens)
     assert not is_official("https://example.com/github-guide", tokens)
     assert is_official("https://developers.google.com/identity", ("google",))
+
+
+def test_developers_provider_is_official():
+    assert is_official("https://developers.hubspot.com/docs/api", ("hubspot",))
+    assert is_official("https://developer.spotify.com/documentation/web-api", ("spotify",))
+    assert is_official("https://developers.asana.com/docs", ("asana",))
+    assert is_official("https://developers.zoom.us/docs", ("zoom",))
+    assert is_official("https://developers.google", ("google",))
+    assert is_official("developers.hubspot.com", ("hubspot",))
+    assert is_official("https://api.developers.provider.com/v1", ("provider",))
+    assert not is_official("https://developers.attacker.com/google", ("google",))
+    assert not is_official("https://developers.github.io", ("github",))
+    assert not is_official("https://developers.medium.com", ("medium",))

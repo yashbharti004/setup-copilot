@@ -1,11 +1,11 @@
 from __future__ import annotations
-from publicsuffix2 import get_sld   
+from publicsuffix2 import get_sld
 import re
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
 _SECOND_LEVEL = {"co", "com", "org", "net", "gov", "ac", "edu"}
-_STOPWORDS = {"the", "and", "for", "app", "api", "inc", "formerly"}
+_STOPWORDS = {"the", "and", "for", "app", "api", "inc", "formerly", "developer", "developers", "docs", "dev"}
 _DOMAIN_RE = re.compile(r"^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(/\S*)?$")
 
 OFFICIAL_DOMAINS: dict[str, tuple[str, ...]] = {
@@ -68,8 +68,11 @@ def registrable_label(host: str) -> str:
 
 
 def host_of(url: str) -> str:
+    cleaned = (url or "").strip()
+    if cleaned and "://" not in cleaned:
+        cleaned = "https://" + cleaned
     try:
-        host = urlparse(url).hostname
+        host = urlparse(cleaned).hostname
     except ValueError:
         host = None
     return (host or "").lower().removeprefix("www.")
@@ -86,7 +89,7 @@ def is_official(url: str, tokens: tuple[str, ...]) -> bool:
         if host == suffix or host.endswith("." + suffix):
             return False
 
-    # Trust only explicitly registered provider domains.
+    # Trust explicitly registered provider domains.
     for token in tokens:
         for official_domain in OFFICIAL_DOMAINS.get(token, ()):
             if (
@@ -94,6 +97,27 @@ def is_official(url: str, tokens: tuple[str, ...]) -> bool:
                 or host.endswith("." + official_domain)
             ):
                 return True
+
+    # Rule: If the URL is developers.(provider) or developer.(provider) / docs.(provider) / dev.(provider),
+    # then this is the official provider site.
+    reg_label = registrable_label(host)
+    for prefix in ("developers.", "developer.", "docs.", "dev."):
+        if host.startswith(prefix):
+            remainder = host[len(prefix):]
+            for token in tokens:
+                if (
+                    remainder == token
+                    or remainder.startswith(f"{token}.")
+                    or reg_label == token
+                    or (len(token) >= 3 and token in reg_label)
+                ):
+                    return True
+
+    # Also match if developers.<token> appears as a subdomain segment anywhere in the host
+    # e.g., api.developers.provider.com
+    for token in tokens:
+        if f"developers.{token}" in host or f"developer.{token}" in host:
+            return True
 
     return False
 
