@@ -1,21 +1,33 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Guide } from "@/lib/schema/guide";
 import { getAllGuides } from "@/lib/data/guides";
 import { DifficultyBadge } from "@/components/DifficultyBadge";
 import { ConfidenceChip } from "@/components/ConfidenceChip";
-import { Search, ArrowRight, ArrowLeft } from "lucide-react";
+import { Search, ArrowRight, ArrowLeft, ArrowUpDown, Shield } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/Table";
 
-export default function LibraryPage() {
+function LibraryPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [guides, setGuides] = useState<Guide[]>(() => getAllGuides());
   const [search, setSearch] = useState("");
-  const [difficultyFilter, setDifficultyFilter] = useState("all");
+
+  const currentTierParam = searchParams?.get("tier") || "all";
+  const [difficultyFilter, setDifficultyFilter] = useState(currentTierParam);
   const [approvalFilter, setApprovalFilter] = useState("all");
   const [managedFilter, setManagedFilter] = useState(false);
+
+  // Sorting
+  const [sortField, setSortField] = useState<"name" | "score" | "category">("name");
+  const [sortAsc, setSortAsc] = useState<boolean>(true);
 
   useEffect(() => {
     fetch("/api/guides")
@@ -28,29 +40,66 @@ export default function LibraryPage() {
       .catch(() => {});
   }, []);
 
-  const filtered = guides.filter((g) => {
-    const matchesSearch =
-      g.app.name.toLowerCase().includes(search.toLowerCase()) ||
-      g.summary.toLowerCase().includes(search.toLowerCase()) ||
-      g.app.category.toLowerCase().includes(search.toLowerCase());
+  const handleTierChange = (val: string) => {
+    setDifficultyFilter(val);
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    if (val === "all") {
+      params.delete("tier");
+    } else {
+      params.set("tier", val);
+    }
+    router.push(`/library?${params.toString()}`, { scroll: false });
+  };
 
-    const matchesDiff =
-      difficultyFilter === "all" || g.difficulty.toLowerCase() === difficultyFilter.toLowerCase();
+  const handleSort = (field: "name" | "score" | "category") => {
+    if (sortField === field) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortField(field);
+      setSortAsc(true);
+    }
+  };
 
-    const matchesApproval =
-      approvalFilter === "all" ||
-      (approvalFilter === "required" && g.approval.required) ||
-      (approvalFilter === "none" && !g.approval.required);
+  const filteredAndSorted = useMemo(() => {
+    let list = guides.filter((g) => {
+      const matchesSearch =
+        g.app.name.toLowerCase().includes(search.toLowerCase()) ||
+        g.summary.toLowerCase().includes(search.toLowerCase()) ||
+        g.app.category.toLowerCase().includes(search.toLowerCase());
 
-    const matchesManaged = !managedFilter || g.app.in_composio_managed;
+      const matchesDiff =
+        difficultyFilter === "all" ||
+        g.difficulty.toLowerCase() === difficultyFilter.toLowerCase();
 
-    return matchesSearch && matchesDiff && matchesApproval && matchesManaged;
-  });
+      const matchesApproval =
+        approvalFilter === "all" ||
+        (approvalFilter === "required" && g.approval.required) ||
+        (approvalFilter === "none" && !g.approval.required);
+
+      const matchesManaged = !managedFilter || g.app.in_composio_managed;
+
+      return matchesSearch && matchesDiff && matchesApproval && matchesManaged;
+    });
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortField === "name") {
+        cmp = a.app.name.localeCompare(b.app.name);
+      } else if (sortField === "score") {
+        cmp = a.difficulty_score - b.difficulty_score;
+      } else if (sortField === "category") {
+        cmp = a.app.category.localeCompare(b.app.category);
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+
+    return list;
+  }, [guides, search, difficultyFilter, approvalFilter, managedFilter, sortField, sortAsc]);
 
   return (
     <div className="bg-[#050507] text-slate-100 min-h-screen">
       {/* Top Metadata Strip */}
-      <div className="border-b border-white/[0.08] bg-[#0c0d12] py-2 px-4 sm:px-6 lg:px-8 text-[11px] font-mono flex flex-wrap items-center justify-between gap-3 text-slate-400">
+      <div className="border-b border-white/[0.08] bg-[#0c0d14] py-2 px-4 sm:px-6 lg:px-8 text-[11px] font-mono flex flex-wrap items-center justify-between gap-3 text-slate-400">
         <div className="flex items-center gap-3">
           <Link href="/" className="text-slate-300 hover:text-white transition flex items-center gap-1 font-bold">
             <ArrowLeft className="w-3 h-3" />
@@ -61,41 +110,40 @@ export default function LibraryPage() {
           <span className="text-slate-600">|</span>
           <span>ENTRIES: {guides.length}</span>
           <span className="text-slate-600">|</span>
-          <span className="text-emerald-400">STATUS: VERIFIED_CACHE</span>
+          <span className="text-emerald-400">STATUS: AUDITED</span>
         </div>
         <Link href="/" className="text-sky-400 hover:underline">
           [LAUNCH SETUP COPILOT →]
         </Link>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 font-mono">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 font-sans">
         {/* Header */}
-        <div className="mb-8 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-sky-500/30 bg-sky-950/20 text-[11px] font-mono text-sky-400 mb-1">
-            <span className="w-2 h-2 rounded-full bg-sky-400" />
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-sky-500/30 bg-sky-950/20 text-xs font-mono text-sky-400">
+            <Shield className="w-3.5 h-3.5" />
             <span>AUDITED INTEGRATION REGISTRY &amp; DOSSIER DIRECTORY</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-sans font-bold tracking-tight text-white">
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-white">
             Integration Registry &amp; Blueprint Directory
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 font-sans max-w-2xl leading-relaxed">
-            Search verified OAuth specifications, scope taxonomies, and approval barriers.
-            Compare setup effort and approval wait times across developer platforms.
+          <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
+            Search verified OAuth specifications, scope taxonomies, and approval barriers. Compare setup effort and approval wait times across developer platforms.
           </p>
         </div>
 
-        {/* Filter Controls Bar with macOS window style */}
-        <div className="rounded-2xl border border-white/[0.12] bg-[#0c0d12]/95 p-4 mb-8 space-y-3 text-xs shadow-xl">
+        {/* Filter Controls Bar */}
+        <Card className="p-4 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            {/* Search */}
-            <div className="md:col-span-2 relative flex items-center bg-black border border-white/[0.1] px-3 py-2 rounded-xl">
+            {/* Search Input */}
+            <div className="md:col-span-2 relative flex items-center bg-black/60 border border-white/[0.1] px-3 py-2 rounded-xl focus-within:border-sky-400 transition">
               <Search className="w-3.5 h-3.5 text-slate-500 mr-2 shrink-0" />
               <input
                 type="text"
-                placeholder="grep by name, category, or scope keyword..."
+                placeholder="grep by provider name, category, or scope..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-transparent border-0 text-white placeholder-slate-600 focus:outline-none text-xs font-mono"
+                className="w-full bg-transparent border-0 text-white placeholder-slate-600 focus:outline-none text-xs font-sans"
               />
             </div>
 
@@ -103,14 +151,15 @@ export default function LibraryPage() {
             <div>
               <select
                 value={difficultyFilter}
-                onChange={(e) => setDifficultyFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-black border border-white/[0.1] text-slate-300 focus:outline-none text-xs font-mono rounded-xl"
+                onChange={(e) => handleTierChange(e.target.value)}
+                className="w-full px-3 py-2 bg-black/60 border border-white/[0.1] text-slate-200 focus:outline-none text-xs rounded-xl"
               >
-                <option value="all">ALL_DIFFICULTIES</option>
-                <option value="easy">EASY (0-24)</option>
-                <option value="moderate">MODERATE (25-59)</option>
-                <option value="hard">HARD (60-84)</option>
-                <option value="gated">GATED (85+)</option>
+                <option value="all">All Difficulties</option>
+                <option value="easy">Easy (0–24)</option>
+                <option value="moderate">Moderate (25–59)</option>
+                <option value="hard">Hard (60–84)</option>
+                <option value="gated">Gated (85+)</option>
+                <option value="unknown">Unknown</option>
               </select>
             </div>
 
@@ -119,176 +168,231 @@ export default function LibraryPage() {
               <select
                 value={approvalFilter}
                 onChange={(e) => setApprovalFilter(e.target.value)}
-                className="w-full px-3 py-2 bg-black border border-white/[0.1] text-slate-300 focus:outline-none text-xs font-mono rounded-xl"
+                className="w-full px-3 py-2 bg-black/60 border border-white/[0.1] text-slate-200 focus:outline-none text-xs rounded-xl"
               >
-                <option value="all">ALL_APPROVAL_MODES</option>
-                <option value="none">NO_REVIEW_REQ (INSTANT)</option>
-                <option value="required">MANDATORY_REVIEW_GATE</option>
+                <option value="all">All Approval Modes</option>
+                <option value="none">Self-Serve (Instant)</option>
+                <option value="required">Mandatory App Review</option>
               </select>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/[0.06] text-[11px]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/[0.06] text-xs">
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">FILTER_TOGGLE:</span>
-              <button
+              <span className="text-slate-400 font-mono text-[11px]">CONNECTOR FILTER:</span>
+              <Button
+                variant={managedFilter ? "primary" : "outline"}
+                size="sm"
                 onClick={() => setManagedFilter(!managedFilter)}
-                className={`px-2.5 py-1 rounded border uppercase transition ${
-                  managedFilter
-                    ? "bg-white text-black font-bold border-white"
-                    : "text-slate-400 border-white/[0.08] hover:border-white/[0.2]"
-                }`}
+                className="text-[11px] font-mono h-7"
               >
-                [COMPOSIO_MANAGED_ONLY]
-              </button>
+                1-Click Managed Only
+              </Button>
             </div>
 
-            <span className="text-slate-500 tabular-nums">
-              MATCHES: {filtered.length} / {guides.length}
+            <span className="text-slate-400 font-mono text-xs tabular-nums">
+              Showing {filteredAndSorted.length} of {guides.length} profiles
             </span>
           </div>
-        </div>
+        </Card>
 
         {/* Directory Ledger Table */}
-        <div className="rounded-2xl border border-white/[0.12] bg-[#0c0d12]/95 overflow-hidden shadow-2xl">
-          <div className="px-4 py-3 border-b border-white/[0.08] bg-black/60 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
-              <span className="text-[11px] text-slate-300 ml-2 font-mono">~/registry/all-dossiers</span>
-            </div>
-            <span className="text-[10px] text-slate-500 uppercase">
-              RECONCILED_LEDGER
-            </span>
-          </div>
+        <Card className="overflow-hidden">
+          {/* Desktop Table */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <button
+                      onClick={() => handleSort("name")}
+                      className="flex items-center gap-1 hover:text-white transition"
+                    >
+                      <span>Provider &amp; Portal</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                    </button>
+                  </TableHead>
+                  <TableHead>
+                    <button
+                      onClick={() => handleSort("score")}
+                      className="flex items-center gap-1 hover:text-white transition"
+                    >
+                      <span>Difficulty Score</span>
+                      <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                    </button>
+                  </TableHead>
+                  <TableHead>Active Effort</TableHead>
+                  <TableHead>Typical Wait</TableHead>
+                  <TableHead>Review Mode</TableHead>
+                  <TableHead>Managed Auth</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAndSorted.map((guide) => {
+                  const isLower = Boolean(guide.difficulty_meta?.lower_bound);
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-white/[0.08] bg-black/40 text-slate-400 text-[11px] uppercase tracking-wider">
-                  <th className="py-3 px-4 font-bold">App &amp; Portal</th>
-                  <th className="py-3 px-4 font-bold">Difficulty Score</th>
-                  <th className="py-3 px-4 font-bold">Active Effort</th>
-                  <th className="py-3 px-4 font-bold">Typical Approval Wait</th>
-                  <th className="py-3 px-4 font-bold">Review Mode</th>
-                  <th className="py-3 px-4 font-bold">Managed Auth</th>
-                  <th className="py-3 px-4 font-bold text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.06] text-slate-300">
-                {filtered.map((guide) => (
-                  <tr
-                    key={guide.app.slug}
-                    onClick={() => router.push(`/guide/${guide.app.slug}`)}
-                    className="hover:bg-white/[0.04] transition-colors cursor-pointer group"
-                  >
-                    <td className="py-4 px-4 font-medium text-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 bg-black border border-white/[0.1] p-1 flex items-center justify-center shrink-0 rounded">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={guide.app.logo}
-                            alt={guide.app.name}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = "none";
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <span className="font-bold group-hover:text-sky-300 transition-colors block text-sm">
-                            {guide.app.name}
-                          </span>
-                          <span className="text-[10px] text-slate-500 uppercase font-normal">
-                            {guide.app.category}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="py-4 px-4">
-                      <DifficultyBadge
-                        difficulty={guide.difficulty}
-                        score={guide.difficulty_score}
-                        size="sm"
-                      />
-                    </td>
-
-                    <td className="py-4 px-4 text-slate-200 tabular-nums">
-                      {guide.time_estimate.setup_active_effort}
-                    </td>
-
-                    <td className="py-4 px-4 font-mono text-[11px]">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-slate-200">
-                            Dev: {guide.time_estimate.dev_wait_claim?.split("(")[0] || "Instant"}
-                          </span>
-                          <ConfidenceChip
-                            status={guide.time_estimate.dev_wait_confidence || "verified"}
-                            size="sm"
-                          />
-                        </div>
-                        {guide.time_estimate.production_wait_claim && (
-                          <div className="flex items-center gap-1.5 text-slate-400">
-                            <span className="text-slate-300">
-                              Public: {guide.time_estimate.production_wait_claim.split("(")[0]}
-                            </span>
-                            <ConfidenceChip
-                              status={guide.time_estimate.production_wait_confidence || guide.time_estimate.confidence}
-                              size="sm"
+                  return (
+                    <TableRow
+                      key={guide.app.slug}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          router.push(`/guide/${guide.app.slug}`);
+                        }
+                      }}
+                      onClick={() => router.push(`/guide/${guide.app.slug}`)}
+                      className="cursor-pointer group"
+                    >
+                      <TableCell className="font-medium text-white">
+                        <div className="flex items-center gap-3">
+                          <div className="w-7 h-7 bg-black border border-white/[0.1] rounded p-1 flex items-center justify-center shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={guide.app.logo}
+                              alt={guide.app.name}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = "none";
+                              }}
                             />
                           </div>
+                          <div>
+                            <span className="font-bold group-hover:text-sky-300 transition-colors block text-sm">
+                              {guide.app.name}
+                            </span>
+                            <span className="text-[11px] text-slate-400 font-sans">
+                              {guide.app.category}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <DifficultyBadge
+                          difficulty={guide.difficulty}
+                          score={guide.difficulty_score}
+                          lowerBound={isLower}
+                          size="sm"
+                        />
+                      </TableCell>
+
+                      <TableCell className="text-slate-300 font-mono text-xs">
+                        {guide.time_estimate.setup_active_effort}
+                      </TableCell>
+
+                      <TableCell className="font-mono text-xs text-slate-200">
+                        {guide.time_estimate.approval_wait || "Not stated in sources"}
+                      </TableCell>
+
+                      <TableCell>
+                        {guide.approval.required ? (
+                          <Badge variant="warning" size="sm">
+                            Review Required
+                          </Badge>
+                        ) : (
+                          <Badge variant="success" size="sm">
+                            Instant Dev
+                          </Badge>
                         )}
-                      </div>
-                    </td>
+                      </TableCell>
 
-                    <td className="py-4 px-4">
-                      {guide.approval.required ? (
-                        <span className="text-amber-400 font-bold uppercase text-[10px]">
-                          [REVIEW_REQ]
-                        </span>
-                      ) : (
-                        <span className="text-emerald-400 font-bold uppercase text-[10px]">
-                          [INSTANT_DEV]
-                        </span>
-                      )}
-                    </td>
-
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sky-400 font-bold text-[10px] uppercase">
-                          [1-CLICK MANAGED]
-                        </span>
-                        {guide.app.composio_tool_url && (
-                          <a
-                            href={guide.app.composio_tool_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-slate-400 hover:text-white transition text-xs"
-                            title="View on Composio"
-                          >
-                            ↗
-                          </a>
+                      <TableCell>
+                        {guide.app.in_composio_managed ? (
+                          <span className="text-sky-400 font-mono text-xs font-bold">
+                            1-Click Available
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 font-mono text-xs">
+                            BYOC Only
+                          </span>
                         )}
-                      </div>
-                    </td>
+                      </TableCell>
 
-                    <td className="py-4 px-4 text-right">
-                      <span className="inline-flex items-center gap-1 text-slate-400 group-hover:text-white font-bold transition">
-                        <span>OPEN</span>
-                        <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <TableCell className="text-right">
+                        <span className="inline-flex items-center gap-1 text-slate-400 group-hover:text-white font-mono text-xs font-bold transition">
+                          <span>Open</span>
+                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
-        </div>
+
+          {/* Mobile Card Layout */}
+          <div className="md:hidden divide-y divide-white/[0.08]">
+            {filteredAndSorted.map((guide) => {
+              const isLower = Boolean(guide.difficulty_meta?.lower_bound);
+              return (
+                <div
+                  key={guide.app.slug}
+                  onClick={() => router.push(`/guide/${guide.app.slug}`)}
+                  className="p-4 space-y-3 active:bg-white/[0.04] transition cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-bold text-white text-sm">{guide.app.name}</div>
+                      <div className="text-[11px] text-slate-400">{guide.app.category}</div>
+                    </div>
+                    <DifficultyBadge
+                      difficulty={guide.difficulty}
+                      score={guide.difficulty_score}
+                      lowerBound={isLower}
+                      size="sm"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Effort</span>
+                      <span className="text-slate-200">{guide.time_estimate.setup_active_effort}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 uppercase block">Wait</span>
+                      <span className="text-slate-200 truncate block">
+                        {guide.time_estimate.approval_wait || "Not stated in sources"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1 border-t border-white/[0.06] text-xs">
+                    {guide.approval.required ? (
+                      <Badge variant="warning" size="sm">
+                        Review Req
+                      </Badge>
+                    ) : (
+                      <Badge variant="success" size="sm">
+                        Instant Dev
+                      </Badge>
+                    )}
+                    <span className="text-sky-400 font-mono text-xs flex items-center gap-1 font-bold">
+                      <span>View Dossier</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
       </div>
     </div>
+  );
+}
+
+export default function LibraryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-[#050507] text-slate-100 min-h-screen p-8 text-center font-mono">
+          Loading Directory...
+        </div>
+      }
+    >
+      <LibraryPageContent />
+    </Suspense>
   );
 }

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 interface DifficultyBadgeProps {
   difficulty: DifficultyLevel;
   score?: number;
+  lowerBound?: boolean;
   className?: string;
   showScore?: boolean;
   size?: "sm" | "md" | "lg";
@@ -13,6 +14,7 @@ interface DifficultyBadgeProps {
 export function DifficultyBadge({
   difficulty,
   score,
+  lowerBound = false,
   className,
   showScore = true,
   size = "md",
@@ -45,9 +47,21 @@ export function DifficultyBadge({
       bg: "bg-purple-950/20",
       code: "85",
     },
+    UNKNOWN: {
+      text: "text-slate-300",
+      border: "border-slate-600/60",
+      bg: "bg-slate-800/50",
+      code: "--",
+    },
   };
 
-  const c = configs[difficulty] || configs.Moderate;
+  const normalizedDiff = (
+    difficulty?.toLowerCase() === "unknown"
+      ? "UNKNOWN"
+      : difficulty
+  ) as DifficultyLevel;
+
+  const c = configs[normalizedDiff] || configs.UNKNOWN;
 
   const sizeClasses = {
     sm: "text-[10px] px-2 py-0.5 tracking-wider",
@@ -55,12 +69,15 @@ export function DifficultyBadge({
     lg: "text-xs px-3 py-1 tracking-widest font-semibold",
   };
 
-  const scoreStr = typeof score === "number" ? String(score).padStart(2, "0") : c.code;
+  let scoreStr = typeof score === "number" ? String(score).padStart(2, "0") : c.code;
+  if (lowerBound && typeof score === "number") {
+    scoreStr = `≥${score}`;
+  }
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-mono uppercase border select-none transition-colors",
+        "inline-flex items-center gap-1 font-mono uppercase border select-none transition-colors rounded",
         c.bg,
         c.text,
         c.border,
@@ -69,7 +86,7 @@ export function DifficultyBadge({
       )}
     >
       <span className="opacity-60">[</span>
-      <span>{difficulty}</span>
+      <span>{normalizedDiff}</span>
       {showScore && (
         <>
           <span className="opacity-40">//</span>

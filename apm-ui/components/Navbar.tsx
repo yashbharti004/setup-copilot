@@ -32,14 +32,14 @@ export function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 border-l border-white/[0.08] pl-6">
+          <nav aria-label="Main Navigation" className="hidden md:flex items-center gap-1 border-l border-white/[0.08] pl-6">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`inline-flex items-center px-3 py-1.5 text-xs font-mono tracking-wider rounded transition-colors ${
+                  className={`inline-flex items-center px-3 py-1.5 text-xs font-mono tracking-wider rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
                     isActive
                       ? "text-white font-bold bg-white/[0.06] border border-white/[0.12]"
                       : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
