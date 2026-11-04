@@ -112,14 +112,14 @@ export function CopilotWorkbench() {
     const controller = new AbortController();
     setAbortController(controller);
 
-    // 120 seconds timeout for live LLM and web verification
+    // 180 seconds timeout for live LLM and web verification
     const timeoutId = setTimeout(() => {
       timedOutRef.current = true;
       controller.abort();
       setIsResearching(false);
       setGenerationStep("error");
-      setErrorMessage("Research request timed out after 120 seconds. Please try again.");
-    }, 120000);
+      setErrorMessage("Research request timed out after 180 seconds. Please try again.");
+    }, 180000);
 
     try {
       const response = await fetch("/api/research", {

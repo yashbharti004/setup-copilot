@@ -104,8 +104,6 @@ SCORING_KEYS: tuple[str, ...] = (
 GATE_KEYS: tuple[str, ...] = (
     "review_required_for_distribution",
     "requires_paid_plan",
-    "requires_security_audit",
-    "requires_business_verification",
 )
 
 
