@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
           backendConnected = false;
         }
 
+        let backendCompleted = false;
         if (backendConnected) {
           try {
             const baseUrl = getBackendBaseUrl();
@@ -209,6 +210,7 @@ export async function POST(req: NextRequest) {
                         cachedAt: Date.now(),
                       });
 
+                      backendCompleted = true;
                       sendEvent({
                         step: "complete",
                         title: "Audit Complete & Verified",
@@ -218,9 +220,9 @@ export async function POST(req: NextRequest) {
                       });
                     } else if (data.type === "error" || currentEventType === "error") {
                       sendEvent({
-                        step: "error",
-                        title: "Backend Error",
-                        detail: data.message || "Pipeline error reported by backend",
+                        step: "search_docs",
+                        title: "Backend Notice",
+                        detail: `${data.message || "Backend pipeline issue"}. Switching to internal verified library...`,
                         timestamp: new Date().toLocaleTimeString(),
                       });
                     }
@@ -231,15 +233,17 @@ export async function POST(req: NextRequest) {
               }
             }
 
-            controller.close();
-            return;
+            if (backendCompleted) {
+              controller.close();
+              return;
+            }
           } catch (backendErr: unknown) {
             const msg =
               backendErr instanceof Error
                 ? backendErr.message
                 : "Backend pipeline error";
             sendEvent({
-              step: "error",
+              step: "search_docs",
               title: "Backend Disconnect",
               detail: `${msg}. Executing internal pipeline fallback...`,
               timestamp: new Date().toLocaleTimeString(),

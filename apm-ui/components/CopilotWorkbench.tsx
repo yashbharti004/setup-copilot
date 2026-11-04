@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition, useMemo } from "react";
+import React, { useState, useTransition, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -55,6 +55,8 @@ export function CopilotWorkbench() {
   const [liveStreamEvents, setLiveStreamEvents] = useState<PipelineProgressEvent[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const userCancelledRef = useRef<boolean>(false);
+  const timedOutRef = useRef<boolean>(false);
 
   // Filtered providers for picker
   const filteredGuides = useMemo(() => {
@@ -78,12 +80,14 @@ export function CopilotWorkbench() {
   };
 
   const handleCancelResearch = () => {
+    userCancelledRef.current = true;
     if (abortController) {
       abortController.abort();
       setAbortController(null);
     }
     setIsResearching(false);
     setGenerationStep("idle");
+    setErrorMessage(null);
   };
 
   const handleRunLiveResearch = async (targetQuery?: string) => {
@@ -98,6 +102,8 @@ export function CopilotWorkbench() {
       return;
     }
 
+    userCancelledRef.current = false;
+    timedOutRef.current = false;
     setIsResearching(true);
     setGenerationStep("fetching");
     setLiveStreamEvents([]);
@@ -106,12 +112,14 @@ export function CopilotWorkbench() {
     const controller = new AbortController();
     setAbortController(controller);
 
+    // 120 seconds timeout for live LLM and web verification
     const timeoutId = setTimeout(() => {
+      timedOutRef.current = true;
       controller.abort();
       setIsResearching(false);
       setGenerationStep("error");
-      setErrorMessage("Research request timed out after 30 seconds. Please try again.");
-    }, 30000);
+      setErrorMessage("Research request timed out after 120 seconds. Please try again.");
+    }, 120000);
 
     try {
       const response = await fetch("/api/research", {
@@ -144,6 +152,9 @@ export function CopilotWorkbench() {
             setGenerationStep("verifying");
           } else if (event.step === "compute_rubric") {
             setGenerationStep("scoring");
+          } else if (event.step === "error") {
+            setGenerationStep("error");
+            setErrorMessage(event.detail || "Error during live audit execution.");
           } else if (event.step === "complete") {
             setGenerationStep("complete");
             if (event.guide) {
@@ -155,7 +166,16 @@ export function CopilotWorkbench() {
       }
     } catch (err: any) {
       if (err.name === "AbortError") {
-        setErrorMessage("Audit cancelled.");
+        if (timedOutRef.current) {
+          setGenerationStep("error");
+          setErrorMessage("Research request timed out after 120 seconds. Please try again.");
+        } else if (userCancelledRef.current) {
+          setGenerationStep("idle");
+          setErrorMessage(null);
+        } else {
+          setGenerationStep("error");
+          setErrorMessage("Audit was interrupted.");
+        }
       } else {
         setGenerationStep("error");
         setErrorMessage(
