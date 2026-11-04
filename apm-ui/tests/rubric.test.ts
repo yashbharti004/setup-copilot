@@ -76,12 +76,13 @@ assert.equal(githubResult.level, "Easy");
 
 const googleResult = calculateDifficulty({
   approval_required: true, // +25
-  has_restricted_scopes: true, // +25
+  has_restricted_scopes: true, // +10
   has_sensitive_scopes: false,
   requires_business_verification: false,
   requires_paid_plan: false,
-  requires_security_assessment: true, // +20
+  requires_security_assessment: true, // +25
   requires_video_demo: true, // +10
+  review_wait_days_max: 14, // +10 (wait >= 7 days)
   has_manual_partner_vetting: false,
   instant_self_serve_available: false,
 });
@@ -116,7 +117,7 @@ const replitResult = calculateDifficulty({
 });
 assert.equal(replitResult.score, 85);
 assert.equal(replitResult.level, "Gated");
-assert.ok(replitResult.breakdown.some((b) => b.includes("lacks a public 3rd-party OAuth")));
+assert.ok(replitResult.breakdown_strings.some((b) => b.includes("lacks a public 3rd-party OAuth")));
 
 console.log("  ✓ Dynamic rubric calculations produce exact expected scores & tier levels.");
 

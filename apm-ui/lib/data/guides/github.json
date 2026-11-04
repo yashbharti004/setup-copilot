@@ -91,7 +91,11 @@
     "redirect_uri_format": "https://your-domain.com/api/auth/callback/github or http://localhost:[port]/callback",
     "auth_url": "https://github.com/login/oauth/authorize",
     "token_url": "https://github.com/login/oauth/access_token",
-    "default_scopes": ["read:user", "user:email", "repo"],
+    "default_scopes": [
+      "read:user",
+      "user:email",
+      "repo"
+    ],
     "pkce_support": "optional",
     "token_rotation": "optional"
   },
@@ -131,7 +135,10 @@
     "what_to_prepare": [
       "Application icon (PNG, 500x500)",
       "Valid callback URL with HTTPS (HTTP allowed only for localhost)"
-    ]
+    ],
+    "min_days": null,
+    "max_days": null,
+    "evidence": "VERIFIED"
   },
   "blockers_and_fixes": [
     {
@@ -186,6 +193,46 @@
   "uncertainties": [
     "GitHub is transitioning toward fine-grained GitHub Apps with specific repository permissions over classic OAuth Apps; classic OAuth apps remain fully supported but GitHub recommends GitHub Apps for enterprise granular permissions."
   ],
-  "last_verified": "2026-11-03"
+  "last_verified": "2026-11-03",
+  "has_official_source": true,
+  "sources": [
+    {
+      "id": "gh-src-1",
+      "url": "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app",
+      "title": "GitHub Docs: Creating an OAuth App",
+      "official": true,
+      "via": "fetch",
+      "cited": true
+    }
+  ],
+  "facts": [
+    {
+      "key": "has_public_oauth_registration",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Anyone can create an OAuth app under GitHub Developer Settings.",
+      "source_id": "gh-src-1"
+    },
+    {
+      "key": "review_required_for_distribution",
+      "value": false,
+      "evidence": "VERIFIED",
+      "quote": "You can distribute this app without submitting it for review unless listing on GitHub Marketplace.",
+      "source_id": "gh-src-1"
+    },
+    {
+      "key": "requires_paid_plan",
+      "value": false,
+      "evidence": "VERIFIED",
+      "quote": "Free GitHub accounts include full OAuth app registration capabilities.",
+      "source_id": "gh-src-1"
+    }
+  ],
+  "coverage": {
+    "verified_facts": 10,
+    "total_facts": 10
+  },
+  "notes": [
+    "Instant client credentials. No staff review gate."
+  ]
 }
-

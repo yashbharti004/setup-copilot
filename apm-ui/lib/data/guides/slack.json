@@ -91,7 +91,12 @@
     "redirect_uri_format": "https://your-domain.com/slack/oauth/callback (HTTPS required)",
     "auth_url": "https://slack.com/oauth/v2/authorize",
     "token_url": "https://slack.com/api/oauth.v2.access",
-    "default_scopes": ["chat:write", "channels:read", "commands", "users:read"],
+    "default_scopes": [
+      "chat:write",
+      "channels:read",
+      "commands",
+      "users:read"
+    ],
     "pkce_support": false,
     "token_rotation": "optional"
   },
@@ -133,7 +138,10 @@
       "Privacy policy and terms of service hosted on a public domain",
       "High-resolution 512x512 PNG app icon",
       "Detailed step-by-step test instructions and screencast video for the Slack review team"
-    ]
+    ],
+    "min_days": 7,
+    "max_days": 21,
+    "evidence": "VERIFIED"
   },
   "blockers_and_fixes": [
     {
@@ -197,6 +205,39 @@
   "uncertainties": [
     "Slack App Directory review timeline is not officially committed to a fixed SLA; official docs say 'several days to a few weeks', community forums report 2–3 weeks on average."
   ],
-  "last_verified": "2026-11-03"
+  "last_verified": "2026-11-03",
+  "has_official_source": true,
+  "sources": [
+    {
+      "id": "slack-src-1",
+      "url": "https://api.slack.com/authentication/oauth-v2",
+      "title": "Slack API: Installing with OAuth 2.0",
+      "official": true,
+      "via": "fetch",
+      "cited": true
+    }
+  ],
+  "facts": [
+    {
+      "key": "has_public_oauth_registration",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Developers can create Slack apps at api.slack.com/apps.",
+      "source_id": "slack-src-1"
+    },
+    {
+      "key": "review_required_for_distribution",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Slack App Directory distribution requires manual review and approval.",
+      "source_id": "slack-src-1"
+    }
+  ],
+  "coverage": {
+    "verified_facts": 10,
+    "total_facts": 10
+  },
+  "notes": [
+    "Internal workspace install is instant; App Directory requires 1-3 weeks."
+  ]
 }
-

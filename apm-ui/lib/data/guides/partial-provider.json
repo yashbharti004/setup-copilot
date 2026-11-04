@@ -1,0 +1,174 @@
+{
+  "app": {
+    "name": "Custom Enterprise CRM (Unverified Portal)",
+    "slug": "partial-provider",
+    "logo": "/logos/generic.svg",
+    "docs_url": "https://community.example.com/oauth-notes",
+    "category": "CRM & Enterprise",
+    "in_composio_managed": false
+  },
+  "summary": "Retrieved documentation is limited to third-party forum posts and unofficial developer blogs; no official vendor documentation was accessible. Gating requirements (review, CASA audit, paid plan) could not be verified, so the difficulty score is a lower bound.",
+  "difficulty": "UNKNOWN",
+  "difficulty_score": 35,
+  "difficulty_factors": [
+    "Score is a lower bound (≥35) — 4 of 10 facts verified",
+    "Status UNKNOWN: Gating requirements (review process, security audit, paid plan) not stated in retrieved sources",
+    "No official developer documentation was read; claims derived from third-party posts only"
+  ],
+  "difficulty_meta": {
+    "score": 35,
+    "label": "UNKNOWN",
+    "lower_bound": true,
+    "unknown_inputs": [
+      "review_required_for_distribution",
+      "requires_security_audit",
+      "requires_paid_plan",
+      "requires_business_verification"
+    ],
+    "breakdown": [
+      { "key": "uses_restricted_scopes", "points": 10 },
+      { "key": "requires_video_demo", "points": 10 },
+      { "key": "requires_domain_verification", "points": 5 },
+      { "key": "review_wait_days_max>=7", "points": 10 }
+    ]
+  },
+  "time_estimate": {
+    "setup_active_effort": "Not assessed",
+    "dev_wait_claim": "Not stated in sources",
+    "dev_wait_confidence": "unknown",
+    "production_wait_claim": "Not stated in sources",
+    "production_wait_confidence": "unknown",
+    "approval_wait": "Not stated in sources",
+    "confidence": "community"
+  },
+  "prerequisites": [
+    "Unverified documentation requires manual testing against the live provider API."
+  ],
+  "path": [
+    {
+      "step_number": 1,
+      "action": "Locate Developer Console",
+      "detail": "Third-party community posts suggest registering client apps under Settings > Integrations.",
+      "who": "you",
+      "source": "https://community.example.com/oauth-notes",
+      "confidence": "community",
+      "quote": "You have to email sales or find the hidden integration toggle in your account settings.",
+      "source_id": "comm-src-1"
+    },
+    {
+      "step_number": 2,
+      "action": "Exchange Code for Bearer Token",
+      "detail": "Draft OAuth standard authorization code redirect to /oauth/token.",
+      "who": "agent",
+      "source": "https://community.example.com/oauth-notes",
+      "confidence": "community",
+      "quote": "Standard RFC 6749 code exchange is supported on port 443.",
+      "source_id": "comm-src-1"
+    }
+  ],
+  "config_values": {
+    "redirect_uri_format": "Not assessed",
+    "auth_url": "https://auth.example.com/oauth/authorize",
+    "token_url": "https://auth.example.com/oauth/token",
+    "default_scopes": ["crm:read"],
+    "pkce_support": "unknown",
+    "token_rotation": "unknown"
+  },
+  "scopes": [
+    {
+      "scope": "crm:read",
+      "unlocks": "Access CRM leads and contacts",
+      "sensitivity": "sensitive",
+      "verification_required": false
+    }
+  ],
+  "approval": {
+    "required": false,
+    "min_days": null,
+    "max_days": null,
+    "evidence": "UNKNOWN",
+    "what_reviewed": "Not stated in sources",
+    "typical_rejection_reasons": [],
+    "what_to_prepare": []
+  },
+  "blockers_and_fixes": [
+    {
+      "symptom": "OAuth documentation returns HTTP 404",
+      "cause": "Vendor has moved documentation behind authenticated customer portal.",
+      "fix": "Contact provider account manager for internal OAuth spec sheet."
+    }
+  ],
+  "agent_vs_human": {
+    "agent_can_do": ["Draft OAuth token exchange code"],
+    "you_must_do": ["Obtain client credentials from account representative"],
+    "handoff_critical_point": "Human must obtain credentials manually from provider rep."
+  },
+  "what_to_do_next": [
+    "Request official developer documentation from provider support."
+  ],
+  "evidence": [
+    {
+      "id": "comm-ev-1",
+      "claim": "Community reports that OAuth endpoints exist but lack public registration",
+      "source_url": "https://community.example.com/oauth-notes",
+      "retrieved_at": "2026-11-04T12:00:00Z",
+      "status": "community",
+      "snippet": "Only enterprise partners get access to the OAuth console."
+    }
+  ],
+  "uncertainties": [
+    "No official vendor source retrieved; all claims derived from community forums.",
+    "Unknown whether review process is mandatory for multi-tenant access.",
+    "Unknown whether a paid enterprise subscription is required."
+  ],
+  "sources": [
+    {
+      "id": "comm-src-1",
+      "url": "https://community.example.com/oauth-notes",
+      "title": "Community Forum: How we set up OAuth for Example CRM",
+      "official": false,
+      "via": "search_snippet",
+      "cited": true
+    }
+  ],
+  "facts": [
+    {
+      "key": "has_public_oauth_registration",
+      "value": false,
+      "evidence": "COMMUNITY",
+      "quote": "You have to email sales or find the hidden integration toggle in your account settings.",
+      "source_id": "comm-src-1"
+    },
+    {
+      "key": "uses_restricted_scopes",
+      "value": true,
+      "evidence": "COMMUNITY",
+      "quote": "CRM read permissions are protected by strict access rules.",
+      "source_id": "comm-src-1"
+    },
+    {
+      "key": "requires_video_demo",
+      "value": true,
+      "evidence": "COMMUNITY",
+      "quote": "Their support requested a demo video before activating our client ID.",
+      "source_id": "comm-src-1"
+    },
+    {
+      "key": "requires_domain_verification",
+      "value": true,
+      "evidence": "COMMUNITY",
+      "quote": "We had to verify our corporate domain via TXT records.",
+      "source_id": "comm-src-1"
+    }
+  ],
+  "coverage": {
+    "verified_facts": 4,
+    "total_facts": 10
+  },
+  "notes": [
+    "Score is a lower bound because gating facts (review process, paid plan, security audit) are unverified.",
+    "No official source was retrieved; verdict downgraded to UNKNOWN per rubric policy."
+  ],
+  "has_official_source": false,
+  "last_verified": "2026-11-04"
+}

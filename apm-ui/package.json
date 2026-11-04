@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx tests/rubric.test.ts"
+    "test": "tsx tests/rubric.test.ts && tsx tests/mapper.test.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",

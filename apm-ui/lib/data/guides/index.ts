@@ -5,8 +5,9 @@ import googleGuide from "./google-workspace.json";
 import notionGuide from "./notion.json";
 import twitterGuide from "./twitter-x.json";
 import linearGuide from "./linear.json";
+import partialGuide from "./partial-provider.json";
 
-export const ALL_VERIFIED_GUIDES: Guide[] = [
+export const PREVERIFIED_GUIDES: Guide[] = [
   githubGuide as unknown as Guide,
   slackGuide as unknown as Guide,
   googleGuide as unknown as Guide,
@@ -15,8 +16,12 @@ export const ALL_VERIFIED_GUIDES: Guide[] = [
   linearGuide as unknown as Guide,
 ];
 
-// Alias export for backward compatibility
-export const PREVERIFIED_GUIDES = ALL_VERIFIED_GUIDES;
+export const ALL_VERIFIED_GUIDES: Guide[] = PREVERIFIED_GUIDES;
+
+export const ALL_GUIDES: Guide[] = [
+  ...PREVERIFIED_GUIDES,
+  partialGuide as unknown as Guide,
+];
 
 // In-memory cache for dynamically generated live guides during server runtime
 const runtimeGuideCache = new Map<string, Guide>();
@@ -30,12 +35,14 @@ const SLUG_ALIASES: Record<string, string> = {
   "twitter": "twitter-x",
   "x": "twitter-x",
   "linear-app": "linear",
+  "partial": "partial-provider",
+  "crm": "partial-provider",
 };
 
 export function getGuideBySlug(slug: string): Guide | undefined {
   if (!slug) return undefined;
   const normalized = slug.toLowerCase().trim().replace(/[^a-z0-9_-]/g, "");
-  
+
   // Resolve alias if mapped
   const targetSlug = SLUG_ALIASES[normalized] || normalized;
 
@@ -43,7 +50,7 @@ export function getGuideBySlug(slug: string): Guide | undefined {
   const cached = runtimeGuideCache.get(targetSlug) || runtimeGuideCache.get(normalized);
   if (cached) return cached;
 
-  return ALL_VERIFIED_GUIDES.find(
+  return ALL_GUIDES.find(
     (g) =>
       g.app.slug.toLowerCase() === targetSlug ||
       g.app.slug.toLowerCase() === normalized ||
@@ -58,8 +65,5 @@ export function saveGuideToCache(guide: Guide): void {
 }
 
 export function getAllGuides(): Guide[] {
-  const dynamic = Array.from(runtimeGuideCache.values());
-  const slugs = new Set(ALL_VERIFIED_GUIDES.map((g) => g.app.slug));
-  const uniqueDynamic = dynamic.filter((g) => !slugs.has(g.app.slug));
-  return [...ALL_VERIFIED_GUIDES, ...uniqueDynamic];
+  return ALL_GUIDES;
 }

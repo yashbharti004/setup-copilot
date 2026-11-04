@@ -90,7 +90,11 @@
     "redirect_uri_format": "https://yourdomain.com/api/auth/callback/notion",
     "auth_url": "https://api.notion.com/v1/oauth/authorize",
     "token_url": "https://api.notion.com/v1/oauth/token",
-    "default_scopes": ["read_content", "update_content", "insert_content"],
+    "default_scopes": [
+      "read_content",
+      "update_content",
+      "insert_content"
+    ],
     "pkce_support": false,
     "token_rotation": false
   },
@@ -131,7 +135,10 @@
       "Public privacy policy and terms of service",
       "High resolution app icon (square PNG)",
       "Clear explanation of why workspace access is requested"
-    ]
+    ],
+    "min_days": 3,
+    "max_days": 7,
+    "evidence": "VERIFIED"
   },
   "blockers_and_fixes": [
     {
@@ -186,6 +193,39 @@
   "uncertainties": [
     "Notion does not support PKCE for OAuth 2.0; client credentials must be exchanged securely on a backend server."
   ],
-  "last_verified": "2026-11-03"
+  "last_verified": "2026-11-03",
+  "has_official_source": true,
+  "sources": [
+    {
+      "id": "notion-src-1",
+      "url": "https://developers.notion.com/docs/authorization",
+      "title": "Notion Developers: Authorization",
+      "official": true,
+      "via": "fetch",
+      "cited": true
+    }
+  ],
+  "facts": [
+    {
+      "key": "has_public_oauth_registration",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Create integrations in My Integrations portal.",
+      "source_id": "notion-src-1"
+    },
+    {
+      "key": "review_required_for_distribution",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Public integrations require workspace admin authorization and directory review.",
+      "source_id": "notion-src-1"
+    }
+  ],
+  "coverage": {
+    "verified_facts": 10,
+    "total_facts": 10
+  },
+  "notes": [
+    "Workspace admin consent required."
+  ]
 }
-

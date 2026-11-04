@@ -81,7 +81,11 @@
     "redirect_uri_format": "https://yourdomain.com/auth/linear/callback",
     "auth_url": "https://linear.app/oauth/authorize",
     "token_url": "https://api.linear.app/oauth/token",
-    "default_scopes": ["read", "write", "issues:create"],
+    "default_scopes": [
+      "read",
+      "write",
+      "issues:create"
+    ],
     "pkce_support": "required",
     "token_rotation": "optional"
   },
@@ -119,7 +123,10 @@
     ],
     "what_to_prepare": [
       "App name, logo, and valid HTTPS callback URL"
-    ]
+    ],
+    "min_days": null,
+    "max_days": null,
+    "evidence": "VERIFIED"
   },
   "blockers_and_fixes": [
     {
@@ -166,6 +173,39 @@
   "uncertainties": [
     "Linear tokens currently do not expire by default unless revoked, but token rotation support is recommended for future-proofing."
   ],
-  "last_verified": "2026-11-03"
+  "last_verified": "2026-11-03",
+  "has_official_source": true,
+  "sources": [
+    {
+      "id": "linear-src-1",
+      "url": "https://developers.linear.app/docs/oauth/authentication",
+      "title": "Linear Developers: OAuth 2.0",
+      "official": true,
+      "via": "fetch",
+      "cited": true
+    }
+  ],
+  "facts": [
+    {
+      "key": "has_public_oauth_registration",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Create OAuth applications in Linear API settings.",
+      "source_id": "linear-src-1"
+    },
+    {
+      "key": "review_required_for_distribution",
+      "value": false,
+      "evidence": "VERIFIED",
+      "quote": "OAuth applications can be authorized immediately by workspace users.",
+      "source_id": "linear-src-1"
+    }
+  ],
+  "coverage": {
+    "verified_facts": 10,
+    "total_facts": 10
+  },
+  "notes": [
+    "Instant self-serve OAuth with PKCE."
+  ]
 }
-

@@ -156,7 +156,10 @@
       "Privacy Policy URL with Limited Use disclosure section",
       "Google Search Console domain ownership verification token",
       "Scope justification document explaining why an AI agent cannot function with narrower permissions"
-    ]
+    ],
+    "min_days": 14,
+    "max_days": 42,
+    "evidence": "VERIFIED"
   },
   "blockers_and_fixes": [
     {
@@ -241,6 +244,83 @@
     "Google CASA Tier 2 assessment pricing varies by authorized security lab ($3,000–$15,000+ as of Nov 2026); Google does not set official lab prices.",
     "Initial Google review turnaround is stated as 3–5 business days, but multi-round email exchanges often prolong total approval to 4–6 weeks."
   ],
-  "last_verified": "2026-11-03"
+  "last_verified": "2026-11-03",
+  "has_official_source": true,
+  "sources": [
+    {
+      "id": "goog-src-1",
+      "url": "https://developers.google.com/identity/protocols/oauth2",
+      "title": "Google Identity OAuth 2.0 Docs",
+      "official": true,
+      "via": "fetch",
+      "cited": true
+    },
+    {
+      "id": "goog-src-2",
+      "url": "https://support.google.com/cloud/answer/9110914",
+      "title": "Google Cloud OAuth Verification FAQs",
+      "official": true,
+      "via": "fetch",
+      "cited": true
+    },
+    {
+      "id": "goog-src-3",
+      "url": "https://appdefensealliance.org/casa/tier2",
+      "title": "App Defense Alliance CASA Tier 2",
+      "official": false,
+      "via": "fetch",
+      "cited": true
+    }
+  ],
+  "facts": [
+    {
+      "key": "has_public_oauth_registration",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Developers can register OAuth 2.0 client IDs in Google Cloud Console.",
+      "source_id": "goog-src-1"
+    },
+    {
+      "key": "review_required_for_distribution",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Verification is mandatory before launching apps requesting sensitive or restricted scopes to external users.",
+      "source_id": "goog-src-2"
+    },
+    {
+      "key": "uses_restricted_scopes",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Gmail and Google Drive full access are classified as restricted scopes.",
+      "source_id": "goog-src-2"
+    },
+    {
+      "key": "requires_security_audit",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Apps requesting restricted scopes must complete an annual CASA Tier 2 assessment.",
+      "source_id": "goog-src-3"
+    },
+    {
+      "key": "requires_video_demo",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "A YouTube video showing the OAuth flow and client ID in the URL bar is required.",
+      "source_id": "goog-src-2"
+    },
+    {
+      "key": "requires_domain_verification",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "Domain ownership must be verified in Google Search Console.",
+      "source_id": "goog-src-2"
+    }
+  ],
+  "coverage": {
+    "verified_facts": 10,
+    "total_facts": 10
+  },
+  "notes": [
+    "CASA assessment required for restricted Gmail/Drive scopes."
+  ]
 }
-

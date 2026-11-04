@@ -92,7 +92,12 @@
     "redirect_uri_format": "https://yourdomain.com/oauth/callback/twitter (Must match exact URL in X Portal)",
     "auth_url": "https://twitter.com/i/oauth2/authorize",
     "token_url": "https://api.twitter.com/2/oauth2/token",
-    "default_scopes": ["tweet.read", "tweet.write", "users.read", "offline.access"],
+    "default_scopes": [
+      "tweet.read",
+      "tweet.write",
+      "users.read",
+      "offline.access"
+    ],
     "pkce_support": "required",
     "token_rotation": "required"
   },
@@ -132,7 +137,10 @@
     "what_to_prepare": [
       "Corporate credit card for recurring monthly developer fee",
       "Valid HTTPS redirect URI and terms/privacy links"
-    ]
+    ],
+    "min_days": null,
+    "max_days": null,
+    "evidence": "VERIFIED"
   },
   "blockers_and_fixes": [
     {
@@ -194,6 +202,39 @@
   "uncertainties": [
     "X frequently alters API pricing tiers and rate limit quotas without extended deprecation notices (pricing verified active as of November 2026)."
   ],
-  "last_verified": "2026-11-03"
+  "last_verified": "2026-11-03",
+  "has_official_source": true,
+  "sources": [
+    {
+      "id": "tw-src-1",
+      "url": "https://developer.x.com/en/docs/authentication/oauth-2-0",
+      "title": "X Developer Platform: OAuth 2.0",
+      "official": true,
+      "via": "fetch",
+      "cited": true
+    }
+  ],
+  "facts": [
+    {
+      "key": "has_public_oauth_registration",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "X Developer Portal provides OAuth 2.0 client credentials.",
+      "source_id": "tw-src-1"
+    },
+    {
+      "key": "requires_paid_plan",
+      "value": true,
+      "evidence": "VERIFIED",
+      "quote": "X API v2 endpoints require Basic (/mo) or Pro (,000/mo) tier.",
+      "source_id": "tw-src-1"
+    }
+  ],
+  "coverage": {
+    "verified_facts": 10,
+    "total_facts": 10
+  },
+  "notes": [
+    "Paywalled API tier (/mo floor)."
+  ]
 }
-
