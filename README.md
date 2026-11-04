@@ -10,7 +10,9 @@
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python)](https://python.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38bdf8?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
 [![Zod Enforced](https://img.shields.io/badge/Schema-Zod%20Enforced-306998?style=flat-square)](https://zod.dev/)
-[![Tests Passing](https://img.shields.io/badge/Tests-34%20Passing-10b981?style=flat-square)](/tests)
+[![Tests Passing](https://img.shields.io/badge/Tests-35%20Passing-10b981?style=flat-square)](/tests)
+
+> 📋 **Notes to the Hiring Team**: Please see [**`NOTES_FOR_HIRING_TEAM.md`**](./NOTES_FOR_HIRING_TEAM.md) for our detailed submission walkthrough, including real provider benchmarks, unfamiliar app handling, ground-truth audit ledger, and key architectural decisions.
 
 ---
 
@@ -48,14 +50,14 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
 ## 2. Running Test Suites
 
-Both the backend and frontend have comprehensive test suites verifying rubric calculations, boundary conditions, schema constraints, and contradiction checks:
+Both the backend and frontend have comprehensive test suites verifying rubric calculations, boundary conditions, schema constraints, official domain detection, and contradiction checks:
 
-### Run Backend Unit Tests (27 Pytest tests)
+### Run Backend Unit Tests (28 Pytest tests)
 ```bash
 cd apm-backend
 python -m pytest -v
 ```
-Verifies query parsing, evidence extraction, official domain resolution, deterministic scoring weights, and edge cases.
+Verifies query parsing, `developers.<provider>.*` recognition, evidence extraction, official domain resolution, deterministic scoring weights, and edge cases.
 
 ### Run Frontend Integrity & Mapper Tests (7 test suites)
 ```bash
@@ -69,37 +71,55 @@ Verifies:
 
 ---
 
-## 3. Key Architecture & Design Decisions
+## 3. Notes to the Hiring Team: Show Us That It Works
+
+### A. Experience on Real Apps (Full Spectrum of Challenges)
+We modeled real providers spanning all 4 difficulty tiers:
+- **GitHub (`Easy`, Score: 0/100, 5–10 min)**: Zero review needed for multi-user OAuth apps; only Marketplace listings require review. Instant client secret generation.
+- **Slack (`Moderate`, Score: 45/100, 15–30 min)**: Granular bot vs user scope models; instant for development workspaces, but 2–3 weeks if distributing to the App Directory.
+- **Google Workspace (`Hard`, Score: 80/100, 4–6 weeks)**: Gmail/Drive restricted scopes require domain verification (Search Console), an unlisted YouTube screencast, and a third-party CASA Tier 2 security audit ($5,000+).
+- **X / Twitter (`Gated`, Score: 85/100, Paywall)**: Free tier has a crippling 1,500 post/mo cap and 0 read endpoints. Multi-user agents are blocked without the $100/mo Basic tier.
+- **Linear (`Easy`, Score: 15/100)**: Enforces RFC 7636 PKCE for authorization code exchange.
+- **Notion (`Moderate`, Score: 25/100)**: Enforces page-level isolation rather than workspace-wide access.
+
+### B. Unfamiliar App Live Demonstration
+Submit any unfamiliar app (e.g. `HubSpot`, `Spotify`, `Zoom`, `Asana`, `Dropbox`, or any `developers.<provider>.*` portal):
+1. The backend automatically resolves the official developer portal and filters out user-generated content platforms.
+2. It fetches documentation, extracts 10 canonical facts with cited quotes, runs the verifier critic pass, and deterministically computes the rubric score.
+3. The UI renders the **Start Here** interactive checklist, the **Agent Prep Kit** for human-only steps, and the **Execution Timeline**.
+
+### C. Ground-Truth Verification & Audit (`/evals`)
+We audited **24 claims across 9 provider developer portals** (6 pre-verified + 3 unfamiliar):
+- **Raw First-Pass Accuracy:** **70.8%**
+- **Verifier Safe Pass Rate:** **83.3%**
+- **What was corrected**:
+  - *Gmail Scopes*: Caught agent classifying `gmail.modify` as standard sensitive; corrected to strictly restricted requiring CASA Tier 2 audit.
+  - *Twitter Paywall*: Caught agent claiming Free Tier works for posting bots; corrected to require $100/mo Basic tier, activating Gated floor (85).
+  - *Linear PKCE*: Caught agent claiming PKCE is optional; corrected to mandatory RFC 7636.
+  - *Dropbox Limit*: Caught agent citing legacy 50-user limit from 2017 blog; corrected to official 500-user limit from modern API v2 docs.
+- **What could not be verified (Honest Unknowns)**:
+  - Most vendors do not state review turnaround SLAs in docs. Setup-Copilot marks them as `"Unknown wait: Not stated in official vendor docs"` and computes difficulty as a mathematical lower bound (`≥35`) rather than hallucinating false SLAs.
+
+### D. Thoughtful Use of Agents
+- **Agents cannot solve CAPTCHAs, verify phone numbers, or record UI screencasts.**
+- **Where agents deliver massive value**: Drafting the **Agent Prep Kit** — application purpose, least-privilege scope justifications, data governance statements (AES-256 at rest, TLS 1.3 in transit), privacy policy clauses, and reviewer cover letters with staging instructions.
+
+---
+
+## 4. Key Architecture & Design Decisions
 
 ### A. Absolute Source of Truth: The Dossier JSON
 Every single metric, status label, and difficulty score derives strictly from verified data in the dossier JSON.
-- **Zero hardcoded assumptions:** Internal strings, assumed protocols ("RFC 6749"), and guessed approval turnarounds are never hardcoded. If data was not found, it is explicitly rendered as `"Not assessed"` or `"Not stated in sources"`.
-- **Honest Unknowns:** When approval wait or gating facts are unverified:
-  - Approval displays as `"Not stated in sources"`, never guessed as "Instant".
-  - Incomplete data renders as a lower bound (e.g. `"≥35"`) with an explicit fact count (*"Partial data: 4 of 10 facts verified"*).
-  - Tiers with unknown gates render as neutral gray `UNKNOWN` with explanatory notes.
-- **Official Source Gate:** A `VERIFIED` badge appears **only** when evidence is verified AND from an official developer portal. If only third-party posts were read, the UI displays a warning banner and suppresses `VERIFIED_BLUEPRINT`.
+- **Zero hardcoded assumptions:** Guessed approval turnarounds and internal strings are never hardcoded. If data was not found, it is explicitly rendered as `"Not assessed"` or `"Not stated in sources"`.
+- **Official Source Gate:** A `VERIFIED` badge appears **only** when evidence is verified AND from an official developer portal (`developers.<provider>.*`).
 
 ### B. Contradiction Invariants & Refinement Rules
 Zod schemas (`apm-ui/lib/schema/guide.ts`) enforce `superRefine` invariants:
 1. Mandatory review cannot claim 0 days approval wait without explicit explanation.
 2. Self-serve instant approval cannot specify positive review turnaround days.
-3. Easy difficulty tier (<25 points) is rejected if gating facts (review process, CASA audit, paid plan, business verification) are unknown.
+3. Easy difficulty tier (<25 points) is rejected if gating facts are unknown.
 
-### C. 10 Canonical OAuth Fact Verification Engine
-Every dossier audits against 10 canonical facts:
-1. `has_public_oauth_registration` (Public 3rd-party registration portal)
-2. `review_required_for_distribution` (Mandatory app directory / external review)
-3. `review_wait_days_min` (Minimum stated wait in days)
-4. `review_wait_days_max` (Maximum stated wait in days)
-5. `requires_paid_plan` (Paid subscription / API paywall)
-6. `requires_security_audit` (Third-party assessment, e.g. CASA Tier 2/3)
-7. `requires_video_demo` (Unlisted YouTube screencast)
-8. `requires_domain_verification` (DNS TXT / Search Console verification)
-9. `requires_business_verification` (Legal entity / D-U-N-S verification)
-10. `uses_restricted_scopes` (Restricted or sensitive scope classification)
-
-### D. Single Source of Truth Deterministic Rubric
+### C. Single Source of Truth Deterministic Rubric
 Scores are calculated purely in code (0–100):
 - `+25 pts`: `review_required_for_distribution`
 - `+10 pts`: `uses_restricted_scopes`
@@ -111,15 +131,6 @@ Scores are calculated purely in code (0–100):
 - `+10 pts`: `review_wait_days_max >= 28`
 - `Floor 85`: `requires_paid_plan` (e.g. X API $100/mo paywall)
 - Tiers: `Easy` (0–24), `Moderate` (25–59), `Hard` (60–84), `Gated` (85+), `UNKNOWN`.
-
----
-
-## 4. Ground Truth Verification & Evals Methodology (`/evals`)
-
-We conducted an audit of 24 claims across 9 provider developer portals (6 pre-verified ground truth + 3 live unfamiliar portals).
-- **First-Pass Raw Accuracy:** **70.8%** (17 of 24 claims confirmed by initial extraction).
-- **Verifier Safe Pass Rate:** **83.3%** (20 of 24 claims where the verifier critic downgraded or flagged suspicious claims to prevent engineer traps).
-- **Corrected / Flagged Hallucinations:** 4 claims (e.g., catching Gmail scopes being classified as merely 'sensitive' rather than 'restricted' requiring CASA Tier 2 audits).
 
 ---
 
