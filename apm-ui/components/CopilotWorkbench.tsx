@@ -581,13 +581,6 @@ export function CopilotWorkbench() {
             </CardHeader>
 
             <CardContent className="space-y-4 pt-1">
-              {/* Unofficial Banner if no official source */}
-              {!activeGuide.has_official_source && (
-                <Banner variant="warning" title="No Official Documentation Read">
-                  Claims are derived exclusively from third-party community sources. Do not treat this as a verified provider blueprint.
-                </Banner>
-              )}
-
               {/* Real Factual Summary */}
               <div className="p-3.5 rounded-xl border border-white/[0.08] bg-black/50 text-slate-200 text-xs font-sans leading-relaxed">
                 <span className="text-[10px] font-mono text-slate-400 uppercase font-bold tracking-wider block mb-1">

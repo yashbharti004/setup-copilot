@@ -297,13 +297,6 @@ ${(guide.facts || [])
           </div>
         )}
 
-        {/* Warning Banner if No Official Documentation Was Read */}
-        {!guide.has_official_source && (
-          <Banner variant="warning" title="No Official Documentation Read">
-            This dossier was compiled from third-party posts, forums, or community reports. No official vendor documentation was accessible. Do not treat this profile as a verified blueprint.
-          </Banner>
-        )}
-
         {/* Composio Managed Alternative Advisory */}
         {guide.app.in_composio_managed && (
           <ComposioManagedBanner
