@@ -8,21 +8,76 @@ import {
   BackendGuide,
 } from "@/lib/backend";
 import { saveGuideToCache } from "@/lib/data/guides";
+import { Guide, GuideSchema } from "@/lib/schema/guide";
 import { NextRequest } from "next/server";
+import { z } from "zod";
 
 export const dynamic = "force-dynamic";
 
+// Input schema
+const RequestPayloadSchema = z.object({
+  query: z
+    .string()
+    .min(2, "Query must be at least 2 characters")
+    .max(120, "Query too long"),
+});
+
+// In-memory rate limiting (Free sliding-window rate limiter per client IP)
+const ipRateLimits = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_MAX = 15; // 15 requests per window
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+
+// In-memory research result cache (Free TTL cache)
+const researchResultCache = new Map<string, { guide: Guide; cachedAt: number }>();
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const query = body?.query;
+    // 1. Rate limiting check
+    const forwarded = req.headers.get("x-forwarded-for");
+    const ip = forwarded ? forwarded.split(",")[0].trim() : "127.0.0.1";
+    const now = Date.now();
 
-    if (!query || typeof query !== "string") {
-      return new Response(JSON.stringify({ error: "Query string is required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    const clientUsage = ipRateLimits.get(ip);
+    if (clientUsage && now < clientUsage.resetTime) {
+      if (clientUsage.count >= RATE_LIMIT_MAX) {
+        return new Response(
+          JSON.stringify({
+            error: "Too many audit requests. Please wait a minute before retrying.",
+          }),
+          {
+            status: 429,
+            headers: {
+              "Content-Type": "application/json",
+              "Retry-After": "60",
+            },
+          }
+        );
+      }
+      clientUsage.count += 1;
+    } else {
+      ipRateLimits.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
     }
+
+    // 2. Validate input payload with Zod
+    const rawBody = await req.json();
+    const validation = RequestPayloadSchema.safeParse(rawBody);
+
+    if (!validation.success) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid query payload",
+          details: validation.error.flatten(),
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const { query } = validation.data;
+    const normalizedQuery = query.toLowerCase().trim();
 
     const encoder = new TextEncoder();
 
@@ -33,7 +88,27 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(payload));
         }
 
-        // 1. Try APM Backend (FastAPI Python)
+        // 3. Check in-memory research cache
+        const cached = researchResultCache.get(normalizedQuery);
+        if (cached && now - cached.cachedAt < CACHE_TTL_MS) {
+          sendEvent({
+            step: "resolve",
+            title: "Retrieved from Audit Cache",
+            detail: `Found verified cache for '${query}' (TTL: ${Math.round((CACHE_TTL_MS - (now - cached.cachedAt)) / 1000)}s remaining)`,
+            timestamp: new Date().toLocaleTimeString(),
+          });
+          sendEvent({
+            step: "complete",
+            title: "Audit Complete (Cached)",
+            detail: `Verified dossier for ${cached.guide.app.name}`,
+            timestamp: new Date().toLocaleTimeString(),
+            guide: cached.guide,
+          });
+          controller.close();
+          return;
+        }
+
+        // 4. Try APM Backend (FastAPI Python)
         let backendConnected = false;
         try {
           const health = await checkBackendHealth();
@@ -49,8 +124,8 @@ export async function POST(req: NextRequest) {
             const baseUrl = getBackendBaseUrl();
             sendEvent({
               step: "resolve",
-              title: "Connecting to APM Backend",
-              detail: `Dispatched '${query}' to Python FastAPI generation engine at ${baseUrl}`,
+              title: "Connecting to Python Audit Engine",
+              detail: `Dispatched '${query}' to backend at ${baseUrl}`,
               timestamp: new Date().toLocaleTimeString(),
             });
 
@@ -102,16 +177,16 @@ export async function POST(req: NextRequest) {
 
                       if (stage === "search") {
                         mappedStep = "search_docs";
-                        title = "Search Documentation";
+                        title = "1. Fetching documentation";
                       } else if (stage === "fetch") {
                         mappedStep = "fetch_pages";
-                        title = "Fetch Authoritative Pages";
+                        title = "2. Reading authoritative pages";
                       } else if (stage === "extract") {
                         mappedStep = "extract_schema";
-                        title = "Extract Quote-Backed Claims";
+                        title = "3. Extracting OAuth facts";
                       } else if (stage === "verify") {
                         mappedStep = "verify_claims";
-                        title = "Verify Quotes & Compute Rubric";
+                        title = "4. Verifying quotes & policy";
                       }
 
                       sendEvent({
@@ -123,25 +198,34 @@ export async function POST(req: NextRequest) {
                     } else if (data.type === "done" || currentEventType === "done") {
                       const backendGuide = data.guide as BackendGuide;
                       const adapted = adaptBackendGuideToFrontend(backendGuide);
-                      saveGuideToCache(adapted);
+
+                      // Validate with Zod
+                      const parseResult = GuideSchema.safeParse(adapted);
+                      const finalGuide = parseResult.success ? parseResult.data : adapted;
+
+                      saveGuideToCache(finalGuide);
+                      researchResultCache.set(normalizedQuery, {
+                        guide: finalGuide,
+                        cachedAt: Date.now(),
+                      });
 
                       sendEvent({
                         step: "complete",
                         title: "Audit Complete & Verified",
-                        detail: `Successfully generated and verified ${adapted.app.name} guide (Score: ${adapted.difficulty_score}/100, Tier: ${adapted.difficulty.toUpperCase()}). Stored in backend SQLite.`,
+                        detail: `Successfully verified ${finalGuide.app.name} guide (Score: ${finalGuide.difficulty_score}/100 [${finalGuide.difficulty}]).`,
                         timestamp: new Date().toLocaleTimeString(),
-                        guide: adapted,
+                        guide: finalGuide,
                       });
                     } else if (data.type === "error" || currentEventType === "error") {
                       sendEvent({
                         step: "error",
                         title: "Backend Error",
-                        detail: data.message || "Pipeline error reported by APM backend",
+                        detail: data.message || "Pipeline error reported by backend",
                         timestamp: new Date().toLocaleTimeString(),
                       });
                     }
                   } catch {
-                    // Ignore non-json lines
+                    // Ignore non-json
                   }
                 }
               }
@@ -156,18 +240,22 @@ export async function POST(req: NextRequest) {
                 : "Backend pipeline error";
             sendEvent({
               step: "error",
-              title: "Backend Communication Error",
-              detail: `${msg}. Falling back to internal engine...`,
+              title: "Backend Disconnect",
+              detail: `${msg}. Executing internal pipeline fallback...`,
               timestamp: new Date().toLocaleTimeString(),
             });
-            // Fall through to local pipeline below
           }
         }
 
-        // 2. Fallback: Internal Node.js pipeline
+        // 5. Fallback: Internal Node.js pipeline
         try {
           await executePipeline(query, (event) => {
             sendEvent(event);
+            if (event.step === "complete" && event.guide) {
+              const parseResult = GuideSchema.safeParse(event.guide);
+              const g = parseResult.success ? parseResult.data : event.guide;
+              researchResultCache.set(normalizedQuery, { guide: g, cachedAt: Date.now() });
+            }
           });
           controller.close();
         } catch (err: unknown) {
